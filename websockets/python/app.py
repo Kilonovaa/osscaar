@@ -94,14 +94,13 @@ async def upload(sid, file_data):
         folder = f"./tmp/{sid}/"
         filepath = f'{folder}{random_base64}.mp4'
         createPath(folder)
-        with open(filepath, 'wb') as file:
-            file.write(file_data)
+        # with open(filepath, 'wb') as file:
+        #     file.write(file_data)
         print(f"File uploaded successfully: {filepath}")
         response = {'message': 'success'}
 
-        with open(filepath, 'rb') as f:
-            supabase.storage.from_("data").upload(
-                file=f, path=f"./public/{sid}{random_base64}.mp4", file_options={"content-type": "video/mp4"})
+        supabase.storage.from_("data").upload(
+            file=file_data, path=f"./public/{sid}{random_base64}.mp4", file_options={"content-type": "video/mp4"})
     except Exception as e:
         print(f"Failed to upload file: {str(e)}")
         response = {'message': 'failure', 'error': str(e)}
