@@ -1,4 +1,14 @@
 FROM node:lts-alpine AS build
+
+RUN apk update && apk add python3
+RUN apk add py3-pip
+
+RUN apk add make
+
+RUN npm install -g node-gyp
+
+RUN apk add build-base
+
 COPY ./website/ .
 RUN npm i
 RUN npm run build
