@@ -101,8 +101,7 @@ async def upload(sid, file_data):
 
 async def init_app():
     app.middlewares.append(cors_middleware(
-        allow_origins=["https://nasa.lazar.lol",
-                       "localhost"],
+        allow_origins=["https://nasa.lazar.lol"],
         allow_credentials=True,
         allow_headers=("X-Requested-With", "Content-Type"),
     ))
