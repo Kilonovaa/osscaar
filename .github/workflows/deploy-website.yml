@@ -1,4 +1,4 @@
-name: Build BlockInk Website
+name: Build Nasa Website
 on:
   push:
     branches:
