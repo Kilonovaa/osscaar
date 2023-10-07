@@ -11,7 +11,7 @@ class HSVPixel:
     saturation: int
     value: int
 
-    def __init__(self, hue, saturation, value):
+    def __init__(self, hue: int, saturation: int, value: int):
         self.hue = hue
         self.saturation = saturation
         self.value = value
@@ -21,7 +21,7 @@ MAXORDER = 8
 hilbertPoints = []
 computedOrder = -1
 
-def imageToHilbertArray(img, pxarray: list):
+def imageToHilbertArray(img):
     global MAXORDER, hilbertPoints, computedOrder
 
     if not isinstance(img, np.ndarray):
@@ -41,25 +41,25 @@ def imageToHilbertArray(img, pxarray: list):
         return aux
 
     height, width, _ = img.shape
-    newszexp = min ( max ( max ( getGeqPowerOf2(width), getGeqPowerOf2(height) ), 1 ), MAXORDER )
-    newsz = 2 ** newszexp
+    newSzExp = min ( max ( max ( getGeqPowerOf2(width), getGeqPowerOf2(height) ), 1 ), MAXORDER )
+    newSz = 2 ** newSzExp
 
     cvImage = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    cvImage = cv2.resize(cvImage, (newsz, newsz))
+    cvImage = cv2.resize(cvImage, (newSz, newSz))
 
-    if newszexp != computedOrder:
+    if newSzExp != computedOrder:
         hilbertPoints.clear()
-        hilbertCurve = HilbertCurve(newszexp, 2, 0)
-        hilbertPoints = hilbertCurve.points_from_distances(list(range(newsz * newsz)))
-        computedOrder = newszexp
+        hilbertCurve = HilbertCurve(newSzExp, 2, 0)
+        hilbertPoints = hilbertCurve.points_from_distances(list(range(newSz * newSz)))
+        computedOrder = newSzExp
 
-    pxarray.clear()
+    pxArray = []
 
     for point in hilbertPoints:
         px = cvImage[point[0]][point[1]]
-        pxarray.append(HSVPixel(px[0], px[1], px[2]))
+        pxArray.append(HSVPixel(px[0], px[1], px[2]))
     
-    return newszexp
+    return pxArray
 
 
 # pxarray = []
