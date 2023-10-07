@@ -1,4 +1,5 @@
 from aiohttp import web
+from aiohttp_middlewares import cors_middleware
 import socketio
 import random
 import string
@@ -99,6 +100,12 @@ async def upload(sid, file_data):
 
 
 async def init_app():
+    app.middlewares.append(cors_middleware(
+        allow_origins=["https://nasa.lazar.lol",
+                       "localhost"],
+        allow_credentials=True,
+        allow_headers=("X-Requested-With", "Content-Type"),
+    ))
     sio.start_background_task(background_task)
     return app
 
