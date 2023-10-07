@@ -1,7 +1,6 @@
 <script>
-  import { get } from "svelte/store"
-  import { socketObject } from "../lib/socket"
-  const socket = get(socketObject)
+  import { io } from "socket.io-client"
+  const socket = io("https://wsnasa2023.lazar.lol")
   let progress = 0
 
   socket.on("upload_response", (data) => {
