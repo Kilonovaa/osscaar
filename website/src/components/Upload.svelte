@@ -1,8 +1,7 @@
 <script>
   import { io } from "socket.io-client"
-  const socket = io("https://wsnasa2023.lazar.lol", {
-    transports: ["websocket"],
-  })
+  import { url } from "../lib/socket"
+  const socket = io(url)
   let progress = 0
 
   socket.on("upload_response", (data) => {

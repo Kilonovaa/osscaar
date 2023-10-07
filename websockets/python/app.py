@@ -5,7 +5,7 @@ import string
 import os
 
 sio = socketio.AsyncServer(
-    async_mode='aiohttp', cors_allowed_origins=['*', "nasa.lazar.lol"], max_http_buffer_size=1024 ** 3)
+    async_mode='aiohttp', cors_allowed_origins='*', max_http_buffer_size=1024 ** 3)
 app = web.Application()
 
 
