@@ -1,11 +1,29 @@
 ---
 import Layout from "../layouts/Layout.astro"
 import Card from "../components/Card.astro"
+import Upload from "../components/Upload.svelte"
 ---
 
+<script>
+  console.log("Welcome, browser console!")
+  import { get } from "svelte/store"
+  import { socketObject } from "../stores/socket.js"
+
+  const socket = get(socketObject)
+
+  socket.connect()
+
+  socket.on("connect", () => {
+    console.log("connected")
+  })
+  socket.on("my_response", (data) => {
+    console.log(data)
+  })
+</script>
 <Layout title="Welcome to Astro.">
   <main>
     <h1>Synth</h1>
+    <Upload client:load />
   </main>
 </Layout>
 
