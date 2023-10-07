@@ -2,27 +2,18 @@
 import Layout from "../layouts/Layout.astro"
 import Card from "../components/Card.astro"
 import Upload from "../components/Upload.svelte"
+import ShowAuth from "../components/ShowAuth.svelte"
+import Auth from "../components/Auth.svelte"
+import { get } from "svelte/store"
+import { user } from "../lib/supabase"
 ---
 
-<!-- <script>
-  console.log("Welcome, browser console!")
-  import { get } from "svelte/store"
-  import { socketObject } from "../lib/socket.js"
-
-  const socket = get(socketObject)
-
-  socket.connect()
-  socket.on("connect", () => {
-    console.log("connected")
-  })
-  socket.on("my_response", (data) => {
-    console.log(data)
-  })
-</script> -->
-<Layout title="Welcome to Astro.">
+<Layout title="Welcome to Kilonova.">
   <main>
-    <h1>Synth</h1>
+    <!-- <ShowAuth client:load /> -->
+    <h1>Kilonova</h1>
     <Upload client:load />
+    <Auth client:load />
   </main>
 </Layout>
 
