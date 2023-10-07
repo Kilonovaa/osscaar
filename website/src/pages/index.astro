@@ -4,20 +4,21 @@ import Card from "../components/Card.astro"
 import Upload from "../components/Upload.svelte"
 ---
 
-<script>
+<!-- <script>
   console.log("Welcome, browser console!")
   import { get } from "svelte/store"
   import { socketObject } from "../lib/socket.js"
 
   const socket = get(socketObject)
 
+  socket.connect()
   socket.on("connect", () => {
     console.log("connected")
   })
   socket.on("my_response", (data) => {
     console.log(data)
   })
-</script>
+</script> -->
 <Layout title="Welcome to Astro.">
   <main>
     <h1>Synth</h1>

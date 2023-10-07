@@ -6,11 +6,13 @@ FROM python:3.8-slim-buster
 # Copy the current directory contents into the container at /app
 COPY ./websockets/python/* .
 
+RUN pip install aiohttp
+RUN pip install python-socketio
 # Install pipenv
-RUN pip install pipenv
+# RUN pip install pipenv
 
 # Install any needed packages specified in Pipfile
-RUN pipenv install --system --deploy
+# RUN pipenv install --system --deploy
 
 # Make port 80 available to the world outside this container
 EXPOSE 8000
