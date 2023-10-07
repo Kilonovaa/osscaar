@@ -16,7 +16,7 @@ class HSVPixel:
         self.saturation = saturation
         self.value = value
 
-MAXORDER = 9
+MAXORDER = 8
 
 hilbertPoints = []
 computedOrder = -1
