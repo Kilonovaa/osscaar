@@ -7,7 +7,7 @@ import Upload from "../components/Upload.svelte"
 <script>
   console.log("Welcome, browser console!")
   import { get } from "svelte/store"
-  import { socketObject } from "../stores/socket.js"
+  import { socketObject } from "../lib/socket.js"
 
   const socket = get(socketObject)
 
