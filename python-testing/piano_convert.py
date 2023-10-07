@@ -1,50 +1,43 @@
-#function to convert pixel to midi to wav file
+#function to convert midis to wav file and ajunts volume#
+#########################################################
 from midi2audio import FluidSynth
 from pydub import AudioSegment
 
-
+#Font database
 congas = 'congas MW_1_0.SF2'
 piano = 'Piano_Paradise.sf2'
 
+
+
 class midi_file:
-  def __init__(self, path, soundfont):
-    self.path = ""
-    self.soundfont = ""
-
-FluidSynth('congas MW_1_0.SF2').midi_to_audio('deb_menu.mid',"output.wav")
-FluidSynth('Piano_Paradise.sf2').midi_to_audio('mond_1.mid',"output_beet.wav")
+  def __init__(self, path: str, soundfont: str):
+    self.path = path
+    self.soundfont = soundfont
 
 
-
-
-
-sound1 = AudioSegment.from_file("output.wav")
-sound2 = AudioSegment.from_file("output_beet.wav")
-
-combined = sound1.overlay(sound2)
-
-combined.export("combined.wav", format='wav')
-
-
-
-
-song = AudioSegment.from_wav("combined.wav")
-song_20_db_louder = song + 40
-song_20_db_louder.export("louder.wav", "wav")
-
-
-
-
-
-def make_wav(midis: list):
+def make_wav(midis: list,wav_out_path):
     assert(len(midis) > 0)
-    
-    FluidSynth(midis[0].path).midi_to_audio(midis[0].soundfont,"combined.wav".format(index))
+
+    FluidSynth(midis[0].path).midi_to_audio(midis[0].soundfont,wav_out_path)
     if len(midis) > 1:
         for index in range(1, len(midis)):
-            FluidSynth(midis[index].path).midi_to_audio(midis[index].soundfont,"{index}.wav".format(index))
-            wav0 = AudioSegment.from_file("combined.wav")
-            wavi = AudioSegment.from_file("{index}.wav".format(index))
-            wavi.overlay(wav0).export("combined.wav", format='wav')
+            FluidSynth(midis[index].path).midi_to_audio(midis[index].soundfont,"{}.wav".format(index))
+            wav0 = AudioSegment.from_file(wav_out_path)
+            wavi = AudioSegment.from_file("{}.wav".format(index))
+            wavi.overlay(wav0).export(wav_out_path, format='wav')
+
+def change_vol(wav_in_path, wav_out_path, db_change):
+   (AudioSegment.from_wav(wav_in_path) + db_change).export(wav_out_path, "wav")
+
+
+
+#test
+midis=[]
+midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
+midis.append(midi_file('mond_1.mid','Piano_Paradise.sf2'))
+midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
+
+make_wav(midis,"combined.wav")
+change_vol("combined.wav","combined.wav",40)
         
     
