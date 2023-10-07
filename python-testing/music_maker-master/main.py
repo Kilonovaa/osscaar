@@ -4,7 +4,7 @@ import pygame
 pygame.init()
 
 
-BPM = 1000
+BPM = 240
 beat = 60 / BPM
 
 
