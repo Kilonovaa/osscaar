@@ -106,4 +106,5 @@ async def init_app():
 
 
 if __name__ == '__main__':
+    print("Starting server...")
     web.run_app(init_app(), port=8000)
