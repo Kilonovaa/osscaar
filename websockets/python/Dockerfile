@@ -13,7 +13,7 @@ RUN pip install pipenv
 RUN pipenv install --system --deploy
 
 # Make port 80 available to the world outside this container
-EXPOSE 8080
+EXPOSE 8000
 
 # Run app.py when the container launches
 CMD ["python", "app.py"]
