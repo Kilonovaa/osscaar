@@ -1,5 +1,4 @@
 from aiohttp import web
-from aiohttp_middlewares import cors_middleware
 import socketio
 import random
 import string
