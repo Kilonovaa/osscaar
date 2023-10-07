@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import uvicorn
+from uvicorn.config import Config
 import random
 import string
 import socketio
+
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = socketio.ASGIApp(sio, static_files={
@@ -79,18 +81,25 @@ def test_disconnect(sid):
 
 @sio.on('upload')
 async def upload(sid, file_data):
-    print("File uploaded")
-    print(file_data)
     try:
-        randomBAse64 = ''.join(random.choices(
+        random_base64 = ''.join(random.choices(
             string.ascii_uppercase + string.digits, k=10))
-        with open(f'./tmp/{randomBAse64}.png', 'wb') as file:
+        filename = f'./tmp/{random_base64}.mp4'
+        with open(filename, 'wb') as file:
             file.write(file_data)
+        print(f"File uploaded successfully: {filename}")
         response = {'message': 'success'}
     except Exception as e:
+        print(f"Failed to upload file: {str(e)}")
         response = {'message': 'failure', 'error': str(e)}
     await sio.emit('upload_response', response, room=sid)
 
 
+class Config():
+    websocket_max_size = 1024 * 1024 * 1024  # 1Gb
+
+
+config = CustomConfig(app, host='127.0.0.1', port=8000)
+
 if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=8000)
+    uvicorn.run(config)

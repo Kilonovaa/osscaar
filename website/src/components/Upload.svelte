@@ -8,6 +8,7 @@
   })
   function upload() {
     const file = document.getElementById("file").files[0]
+    console.log(file)
     const reader = new FileReader()
     // reader.readAsDataURL(file)
     reader.readAsArrayBuffer(file)
