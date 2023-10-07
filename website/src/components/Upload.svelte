@@ -7,6 +7,8 @@
   socket.on("upload_response", (data) => {
     console.log(data)
     progress = 0 // reset progress after upload
+    //clear file form form
+    document.getElementById("file").value = ""
   })
 
   function upload() {
