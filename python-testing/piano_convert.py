@@ -1,18 +1,5 @@
-from pypiano import Piano
-from mingus.containers import Note
+#function to convert pixel to midi to wav file
+from midi2audio import FluidSynth
 
-p = Piano()
-
-# Play a simple C-4 via audio
-p.play("C-4")
-
-# Play a mingus Note
-note = Note("C-4")
-p.play(note)
-
-# Record a Note to a wav file
-p.play(note, recording_file="my_first_recording.wav", record_seconds=2)
-
-# Use a different instrument
-p.load_instrument("Honky-tonk Piano")
-p.play(note)
+synth = FluidSynth('congas MW_1_0.SF2')
+synth.midi_to_audio('deb_menu.mid',"output.wav", gain=2)
