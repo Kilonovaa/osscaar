@@ -7,9 +7,9 @@ import numpy as np
 import cv2
 
 class HSVPixel:
-    hue: int
-    saturation: int
-    value: int
+    hue: int         # 0-179
+    saturation: int  # 0-255
+    value: int       # 0-255
 
     def __init__(self, hue: int, saturation: int, value: int):
         self.hue = hue
