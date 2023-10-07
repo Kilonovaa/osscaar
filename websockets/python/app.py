@@ -6,8 +6,9 @@ import string
 import os
 
 sio = socketio.AsyncServer(
-    async_mode='aiohttp', cors_allowed_origins=["localhost", "https://nasa.lazar.lol"], client_max_size=1024 ** 3, max_http_buffer_size=1024 ** 3)
+    async_mode='aiohttp', cors_allowed_origins="*", max_http_buffer_size=1024 ** 3)
 app = web.Application()
+
 
 sio.attach(app)
 
@@ -100,11 +101,7 @@ async def upload(sid, file_data):
 
 
 async def init_app():
-    app.middlewares.append(cors_middleware(
-        allow_origins=["https://nasa.lazar.lol"],
-        allow_credentials=True,
-        allow_headers=("X-Requested-With", "Content-Type"),
-    ))
+
     sio.start_background_task(background_task)
     return app
 
