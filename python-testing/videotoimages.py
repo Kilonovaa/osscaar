@@ -16,3 +16,4 @@ while c!=0:
     c=c-1
 cam.release()
 cv2.destroyAllWindows()
+#
