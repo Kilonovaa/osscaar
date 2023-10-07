@@ -10,9 +10,9 @@ sio = socketio.AsyncServer(
 app = web.Application()
 
 app.middlewares.append(cors_middleware(
-    allow_origins=["https://nasa.lazar.lol"],
-    allow_credentials=True,
-    allow_headers=("X-Requested-With", "Content-Type"),
+    origins=["https://nasa.lazar.lol"],
+    # allow_credentials=True,
+    # allow_headers=("X-Requested-With", "Content-Type"),
 ))
 
 sio.attach(app)
@@ -106,11 +106,7 @@ async def upload(sid, file_data):
 
 
 async def init_app():
-    app.middlewares.append(cors_middleware(
-        allow_origins=["https://nasa.lazar.lol"],
-        allow_credentials=True,
-        allow_headers=("X-Requested-With", "Content-Type"),
-    ))
+
     sio.start_background_task(background_task)
     return app
 
