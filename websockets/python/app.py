@@ -6,11 +6,11 @@ import string
 import os
 
 sio = socketio.AsyncServer(
-    async_mode='aiohttp', cors_allowed_origins=["localhost", "https://nasa.lazar.lol"], max_http_buffer_size=1024 ** 3)
+    async_mode='aiohttp', cors_allowed_origins=["*"], max_http_buffer_size=1024 ** 3)
 app = web.Application()
 
 app.middlewares.append(cors_middleware(
-    origins=["https://nasa.lazar.lol"],
+    origins=["*"],
     # allow_credentials=True,
     # allow_headers=("X-Requested-With", "Content-Type"),
 ))
