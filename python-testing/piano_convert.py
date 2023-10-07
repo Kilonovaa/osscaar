@@ -8,7 +8,6 @@ import os
 congas = 'congas MW_1_0.SF2'
 piano = 'Piano_Paradise.sf2'
 
-mypath = os.path.dirname(__file__) + "\\"
 
 class midi_file:
   def __init__(self, path: str, soundfont: str):
