@@ -19,7 +19,7 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          IMAGE_NAME: monsieurlazar/kilonova-nasa-2023
+          IMAGE_NAME: monsieurlazar/kilonova-nasa-2023-website
         run: |
           sudo docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
           sudo docker build --pull --cache-from $IMAGE_NAME \
@@ -31,8 +31,8 @@ jobs:
       - name: Update Docker Container
         if: success()
         env:
-          CONTAINER_NAME: kilonova-nasa-2023
-          IMAGE_NAME: monsieurlazar/kilonova-nasa-2023
+          CONTAINER_NAME: kilonova-nasa-2023-website
+          IMAGE_NAME: monsieurlazar/kilonova-nasa-2023-website
         run: |
           sudo docker stop $CONTAINER_NAME || true
           sudo docker rm --force $CONTAINER_NAME || true
