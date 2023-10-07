@@ -11,8 +11,6 @@ import Upload from "../components/Upload.svelte"
 
   const socket = get(socketObject)
 
-  socket.connect()
-
   socket.on("connect", () => {
     console.log("connected")
   })
