@@ -4,6 +4,7 @@ import math
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 class HSVPixel:
     hue: int
@@ -15,13 +16,16 @@ class HSVPixel:
         self.saturation = saturation
         self.value = value
 
-MAXORDER = 10
+MAXORDER = 9
 
 hilbertPoints = []
 computedOrder = -1
 
-def imageToHilbertArray(img: Image, pxarray: list):
+def imageToHilbertArray(img, pxarray: list):
     global MAXORDER, hilbertPoints, computedOrder
+
+    if not isinstance(img, np.ndarray):
+        img = np.array(img)
 
     def getGeqPowerOf2(nr: int):
         if nr <= 1:
@@ -36,31 +40,38 @@ def imageToHilbertArray(img: Image, pxarray: list):
             val //= 2
         return aux
 
-    width, height = img.size
+    height, width, _ = img.shape
     newszexp = min ( max ( max ( getGeqPowerOf2(width), getGeqPowerOf2(height) ), 1 ), MAXORDER )
     newsz = 2 ** newszexp
 
-    img = img.resize((newsz, newsz))
-    hsvimg = img.convert("HSV")
+    cvImage = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    cvImage = cv2.resize(cvImage, (newsz, newsz))
 
     if newszexp != computedOrder:
         hilbertPoints.clear()
         hilbertCurve = HilbertCurve(newszexp, 2, 0)
         hilbertPoints = hilbertCurve.points_from_distances(list(range(newsz * newsz)))
-        hilbertPoints = [[x, newsz-1 - y] for [x, y] in hilbertPoints]
         computedOrder = newszexp
 
     pxarray.clear()
 
     for point in hilbertPoints:
-        px = hsvimg.getpixel((point[0], point[1]))
+        px = cvImage[point[0]][point[1]]
         pxarray.append(HSVPixel(px[0], px[1], px[2]))
+    
+    return newszexp
 
-pxarray = []
-mypath = os.path.dirname(__file__)
-print(mypath)
 
-with Image.open(mypath + r"\blackandwhite2.png") as img:
-    imageToHilbertArray(img, pxarray)
+# pxarray = []
+# mypath = os.path.dirname(__file__)
+# print(mypath)
 
+# with Image.open(mypath + r"\blackandwhite2.png") as img:
+#     imageToHilbertArray(np.array(img), pxarray)
+#     for pixel in pxarray:
+#         print(pixel.value)
+#     # xPoints = np.array([x for [x, y] in hilbertPoints])
+#     # yPoints = np.array([y for [x, y] in hilbertPoints])
+#     # plt.plot(xPoints, yPoints)
+#     # plt.show()
 
