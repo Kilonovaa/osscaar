@@ -1,5 +1,5 @@
 FROM node:lts-alpine AS build
-COPY ./app/ .
+COPY ./website/ .
 RUN npm i
 RUN npm run build
 
