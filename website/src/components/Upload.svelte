@@ -39,35 +39,70 @@
       }
     }
   }
+  async function fetchVideo(url) {
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    } else {
+      const videoData = await response.blob()
+      const video = URL.createObjectURL(videoData)
+      return video
+    }
+  }
 </script>
 
 <section>
-  <input type="file" id="file" name="file" on:input={upload} accept=".mp4" />
-  {#if progress > 0 && progress < 100}
-    <progress value={progress} max="100" />
+  <div>
+    <input type="file" id="file" name="file" on:input={upload} accept=".mp4" />
+    {#if progress > 0 && progress < 100}
+      <progress value={progress} max="100" />
+    {/if}
+  </div>
+  {#if videourl != ""}
+    {#await fetchVideo(videourl)}
+      <p>loading...</p>
+    {:then video}
+      <video controls>
+        <source src={video} type="video/mp4" />
+      </video>
+    {:catch error}
+      <p>{error.message}</p>
+    {/await}
   {/if}
 </section>
-{#if videourl != ""}
-  <video src={videourl} controls autoplay muted />
-{/if}
 
 <style>
   section {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     padding-block: 2rem;
+    padding-inline: 2rem;
     border-radius: 1rem;
     min-width: fit-content;
-    background-color: white;
-    color: black;
+    background-color: #40404b;
     width: clamp(1rem, 80vw, 70rem);
     height: 60vh;
     margin: 3rem auto;
   }
+  div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+  video {
+    height: 100%;
+    max-height: 50vh;
+    object-fit: cover;
+    border-radius: 1.5rem;
+  }
   @media only screen and (max-width: 600px) {
     section {
       width: clamp(1rem, 95vw, 70rem);
+      flex-direction: column;
+      height: fit-content;
     }
   }
 </style>
