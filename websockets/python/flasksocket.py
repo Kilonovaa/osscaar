@@ -9,6 +9,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import requests
 from supabase import create_client, Client
 import sys
+import algorithm
 
 url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
@@ -90,28 +91,68 @@ def upload(sid, file_data):
     }
 
     response = requests.post(url, data=monitor, headers=headers)
+    # processing the sound
 
+    def audioProcessCAllback(progress):
+        sio.emit('sound_progress', {
+            "progress": progress
+        }, room=sid)
+    audio_data = algorithm.processAudio(file_data, audioProcessCAllback)
+    # uploading the sound
+
+    sound_path = f"./public/{sid}{random_base64}.wav"
+
+    file_size = sys.getsizeof(audio_data)
+
+    url = f"{supaURL}/storage/v1/object/{bucket}/{sound_path}"
+
+    multipart_encoder = MultipartEncoder(
+        fields={
+            'file': (os.path.basename(sound_path), audio_data, 'audio/wav')
+        }
+    )
+
+    def uploadSoundProgress(monitor):
+        file_size = monitor.len
+        uploaded_bytes = monitor.bytes_read
+        progress = uploaded_bytes / file_size
+
+        print(f"Upload progress: {progress * 100}%")
+        sio.emit('send_response', {
+            "progress": progress * 100
+        }, room=sid)
+
+    monitor = MultipartEncoderMonitor(multipart_encoder, uploadSoundProgress)
+
+    headers = {
+        'Authorization': f'Bearer {key}',
+        'Content-Type': monitor.content_type
+    }
+
+    response = requests.post(url, data=monitor, headers=headers)
+
+    # finish sound uploading
     sio.emit('sound', {
         "status": "success",
         "progress": 100,
-        "url": "/sound.wav"
+        "url": supabase.storage.from_('data').get_public_url(sound_path)
     }, room=sid)
 
-    for i in range(0, 11):
-        sio.emit('sound_progress', {
-            "progress": i * 10
-        }, room=sid)
-        sio.sleep(0.1 + 0.5 * random.random())
-        if i == 8:
-            sio.sleep(1 * random.random())
+    # for i in range(0, 11):
+    #     sio.emit('sound_progress', {
+    #         "progress": i * 10
+    #     }, room=sid)
+    #     sio.sleep(0.1 + 0.5 * random.random())
+    #     if i == 8:
+    #         sio.sleep(1 * random.random())
 
-    for i in range(0, 11):
-        sio.emit('send_response', {
-            "progress": i * 10
-        }, room=sid)
-        sio.sleep(0.08 + 0.2 * random.random())
-        if i == 8:
-            sio.sleep(3 * random.random())
+    # for i in range(0, 11):
+    #     sio.emit('send_response', {
+    #         "progress": i * 10
+    #     }, room=sid)
+    #     sio.sleep(0.08 + 0.2 * random.random())
+    #     if i == 8:
+    #         sio.sleep(3 * random.random())
 
     if response.status_code == 200:
         print("Upload successful.")
