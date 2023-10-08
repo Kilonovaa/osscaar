@@ -16,13 +16,15 @@ frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 
 # create your MIDI object
-mf = MIDIFile(1)     # only 1 track
+mf = MIDIFile(numTracks=1, eventtime_is_ticks=False)     # only 1 track
 track = 0   # the only track
 time = 0    # start at the beginning
 mf.addTrackName(track, time, "Sample Track")
-mf.addTempo(track, time, 120)
+mf.addTempo(track, time, 120) # tempo is in beats per minute
 mf.addTempo(track, time,2000)
 
+# list of controllers: https://www.mixagesoftware.com/en/midikit/help/HTML/controllers.html
+# volume is controller 7
 
 # add some notes
 channel = 0
