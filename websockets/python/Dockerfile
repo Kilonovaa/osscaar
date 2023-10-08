@@ -9,6 +9,8 @@ COPY ./websockets/python/* .
 RUN pip install aiohttp
 RUN pip install python-socketio
 RUN pip install supabase
+RUN pip install requests
+RUN pip install requests_toolbelt
 # Install pipenv
 # RUN pip install pipenv
 
