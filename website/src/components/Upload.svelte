@@ -82,7 +82,58 @@
       }
     }
   }
+  let randomSongName = "An Unknown Spaceship"
   async function fetchVideo(url) {
+    const nouns = [
+      "Galaxy",
+      "Flight",
+      "Wonders",
+      "Space",
+      "Tunes",
+      "Sounds",
+      "Star",
+      "Stardust",
+      "Void",
+      "Sky",
+      "Universe",
+      "Orbit",
+      "Nova",
+      "Wavelength",
+      "Light",
+      "Cosmos",
+      "World",
+      "Gravitation",
+      "Frequency",
+      "Matter",
+      "Dimension",
+    ]
+    const adjectives = [
+      "Cosmic",
+      "Interstellar",
+      "Unknown",
+      "Galactic",
+      "Astral",
+      "Astro",
+      "Infinite",
+      "Fractal",
+      "Futuristic",
+      "Aerial",
+      "Starry",
+      "Orbital",
+      "Elliptical",
+      "Extraterrestrial",
+      "Spiral",
+      "Celestial",
+      "Quantum",
+      "Atomic",
+      "Interplanetary",
+    ]
+    let randomNoun = nouns[Math.floor(Math.random() * nouns.length)]
+    let randomAdjective =
+      adjectives[Math.floor(Math.random() * adjectives.length)]
+    let article = randomAdjective[0].match(/[aeiou]/gi) ? "An" : "A"
+    let finalArticle = Math.random() > 0.5 ? article : "The"
+    randomSongName = finalArticle + " " + randomAdjective + " " + randomNoun
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -299,7 +350,7 @@
         </video>
         <AudioPlayer
           src={soundUrl}
-          title="An Unknown Spaceship"
+          title={randomSongName}
           artist="by Selenotone"
           on:paused={play}
           on:change={frame}
