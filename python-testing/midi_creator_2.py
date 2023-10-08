@@ -108,9 +108,6 @@ def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
     
     volumeMaxDuration = timeBetweenNotes * len(midiFiles) - (volumeZeroDuration + volumeSlopeUpDuration + volumeSlopeDownDuration + volumeZero2Duration)
     assert(volumeMaxDuration >= 0.0)
-
-    for i in range(1, len(midiFiles)):
-        midiFiles[i].addNote(track=7, channel=7, pitch=1, time=0, duration=0.01, volume=1)
     
     for i in range(len(midiFiles)):
         for ch in range(16):
