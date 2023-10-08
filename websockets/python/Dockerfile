@@ -4,7 +4,7 @@ FROM python:3.11.3
 RUN apt-get update && \
     apt-get -y install sudo
 
-RUN sudo apt-get install fluidsynth
+RUN sudo apt-get -y install fluidsynth
 # Set the working directory in the container to /app
 
 # Copy the current directory contents into the container at /app
