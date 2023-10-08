@@ -71,73 +71,93 @@
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 
-def addNoteAtIndex(mf: MIDIFile, midiLength: float, timeBetweenNotes: float,
-                   index: int, pitch: int, volume: int,
-                   nrChannels: int = 16,
-                   noteDuration: float = 40.0):
+def addNoteAtIndex(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
+                   index: int, pitch: int, volume: int, balance: float,
+                   nrChannels: int = 16) -> float:
     
     time = index * timeBetweenNotes
-    mf.addNote(track = index % nrChannels, channel = index % nrChannels, pitch=pitch, time=time, duration=noteDuration, volume=volume)
+    noteDuration = timeBetweenNotes * len(midiFiles)
+    # balance: [-1, 1]
+    balanceChannel = max( min( int((float(balance) + 1.0) / 2.0 * (nrChannels-1)), nrChannels-1 ), 0 )
+    midiFiles[index % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=time, duration=noteDuration, volume=volume)
     return max(midiLength, time)
 
 
-def postProcessing(mf: MIDIFile, midiLength: float, timeBetweenNotes: float,
+def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
                    tempo: int,
                    volumeZeroDuration: float,
                    volumeSlopeUpDuration: float,
                    volumeSlopeDownDuration: float,
                    volumeZero2Duration: float,
                    nrChannels: int = 16,
-                   maxParameter: int = 127,
+                   maxVolume: int = 127,
+                   maxExpression: int = 127,
+                   maxBalance: int = 127,
                    incVolumeResolution: float = 2.5,
                    decVolumeResolution: float = 3.5):
     
-    volumeMaxDuration = timeBetweenNotes * nrChannels - (volumeZeroDuration + volumeSlopeUpDuration + volumeSlopeDownDuration + volumeZero2Duration)
+    volumeMaxDuration = timeBetweenNotes * len(midiFiles) - (volumeZeroDuration + volumeSlopeUpDuration + volumeSlopeDownDuration + volumeZero2Duration)
     assert(volumeMaxDuration >= 0.0)
-    for i in range(nrChannels):
-        mf.addTempo(track=i, time=0, tempo=tempo) # tempo is in beats per minute
-        mf.addControllerEvent(track=i, channel=i, time=0, controller_number=7, parameter=maxParameter)
-        mf.addControllerEvent(track=i, channel=i, time=0, controller_number=11, parameter=0)
-        j = float(i) * timeBetweenNotes
-        while j <= midiLength:
+    
+    for i in range(len(midiFiles)):
+        for ch in range(nrChannels):
+            balance = max(min(int(float(ch) / (nrChannels-1) * maxBalance), maxBalance), 0)
+            midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=8, parameter=balance)
+            midiFiles[i].addTempo(track=ch, time=0, tempo=tempo) # tempo is in beats per minute
+            
+            midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=7, parameter=maxVolume)
+            midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=11, parameter=0)
+            j = float(i) * timeBetweenNotes
+            while j <= midiLength:
 
-            mf.addControllerEvent(track=i, channel=i, time=j, controller_number=11, parameter=0)
-            j += volumeZeroDuration
-            if volumeSlopeUpDuration > 0.0:
-                for k in np.arange(0, maxParameter, incVolumeResolution, dtype=float):
-                    mf.addControllerEvent(track=i, channel=i, time=j + (float(k) / maxParameter) * volumeSlopeUpDuration, controller_number=11, parameter=max(min(int(k), maxParameter), 0))
-            j += volumeSlopeUpDuration
-            mf.addControllerEvent(track=i, channel=i, time=j, controller_number=11, parameter=maxParameter)
-            j += volumeMaxDuration
-            if volumeSlopeDownDuration > 0.0:
-                for k in np.arange(0, maxParameter, decVolumeResolution, dtype=float):
-                    mf.addControllerEvent(track=i, channel=i, time=j + (float(k) / maxParameter) * volumeSlopeDownDuration, controller_number=11, parameter=max(min(maxParameter - int(k), maxParameter), 0))
-            j += volumeSlopeDownDuration
-            mf.addControllerEvent(track=i, channel=i, time=j, controller_number=11, parameter=0)
-            j += volumeZero2Duration
+                midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j, controller_number=11, parameter=0)
+                j += volumeZeroDuration
+                if volumeSlopeUpDuration > 0.0:
+                    for k in np.arange(0, maxExpression, incVolumeResolution, dtype=float):
+                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeUpDuration, controller_number=11, parameter=max(min(int(k), maxExpression), 0))
+                j += volumeSlopeUpDuration
+                midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j, controller_number=11, parameter=maxExpression)
+                j += volumeMaxDuration
+                if volumeSlopeDownDuration > 0.0:
+                    for k in np.arange(0, maxExpression, decVolumeResolution, dtype=float):
+                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeDownDuration, controller_number=11, parameter=max(min(maxExpression - int(k), maxExpression), 0))
+                j += volumeSlopeDownDuration
+                midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j, controller_number=11, parameter=0)
+                j += volumeZero2Duration
 
 
 # test
 
-# mf = MIDIFile(numTracks=16, eventtime_is_ticks=False)
-# currentMidiLength = 0.0
-# timeBetweenNotes = 0.7
+midiFiles = []
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
+midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
 
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 0, 60, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 1, 62, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 2, 63, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 3, 65, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 4, 67, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 5, 68, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 6, 67, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 7, 65, 90)
-# currentMidiLength = addNoteAtIndex(mf, currentMidiLength, timeBetweenNotes, 8, 67, 90)
+currentMidiLength = 0.0
+timeBetweenNotes = 0.7
 
-# postProcessing(mf, currentMidiLength, timeBetweenNotes, 120, 0.5, 2.3, 0.3, 0.2)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 0, 60, 100, -1)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 1, 60, 100, -0.75)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 2, 60, 100, -0.5)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 3, 60, 100, -0.25)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 4, 60, 100, 0.0)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 5, 60, 100, 0.25)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 6, 60, 100, 0.5)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 7, 60, 100, 0.75)
+currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 8, 60, 100, 1.0)
 
-# from piano_convert import midi_file, make_wav
+postProcessing(midiFiles, currentMidiLength, timeBetweenNotes, 120, 0.4, 0.5, 0.3, 0.2)
 
-# with open("funnyout.mid", 'wb') as outf:
-#     mf.writeFile(outf)
+from piano_convert import midi_file, make_wav
 
-# make_wav([midi_file("funnyout.mid", "Piano_Paradise.sf2")], "funnyout.wav")
+midiPaths = []
+
+for i in range(len(midiFiles)):
+    midiPaths.append(midi_file("custom_mid_" + str(i) + ".mid", "Piano_Paradise.sf2"))
+    with open("custom_mid_" + str(i) + ".mid", 'wb') as outf:
+        midiFiles[i].writeFile(outf)
+
+make_wav(midiPaths, "funnyout.wav")
