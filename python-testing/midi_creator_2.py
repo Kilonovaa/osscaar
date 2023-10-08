@@ -71,6 +71,43 @@
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 import cv2
+from pydub import AudioSegment
+from midi2audio import FluidSynth
+import math
+import random
+
+
+class CompleteMidiFile:
+  def __init__(self, path: str, soundfont: str):
+    self.path = path
+    self.soundfont = soundfont
+
+
+majorPitches = []
+minorPitches = []
+
+for pitch in range(12, 24):
+    majorPitch = [pitch]
+    while majorPitch[-1] <= 127:
+        majorPitch.append(majorPitch[-1] + 4)
+        majorPitch.append(majorPitch[-1] + 3)
+        majorPitch.append(majorPitch[-1] + 5)
+    majorPitches.append(majorPitch)
+    minorPitch = [pitch]
+    while minorPitch[-1] <= 127:
+        minorPitch.append(minorPitch[-1] + 3)
+        minorPitch.append(minorPitch[-1] + 4)
+        minorPitch.append(minorPitch[-1] + 5)
+    minorPitches.append(minorPitch)
+
+currentPitchFamily = majorPitches[0]
+
+def getRandomPitchFamily():
+    mm = random.randint(0, 1)
+    if mm == 0:
+        return majorPitches[random.randint(0, len(majorPitches)-1)]
+    return minorPitches[random.randint(0, len(minorPitches)-1)]
+
 
 def getChannelFromBalance(balance: int) -> int:
     return max( min( round(float(balance) / 127.0 * 15.0), 15 ), 0 )
@@ -100,6 +137,7 @@ def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
                    volumeSlopeUpDuration: float,
                    volumeSlopeDownDuration: float,
                    volumeZero2Duration: float,
+                   callback,
                    maxVolume: int = 127,
                    maxExpression: int = 127,
                    incVolumeResolution: float = 2.5,
@@ -137,98 +175,303 @@ def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
 
 def getPitchFromHSV(hue: int, saturation: int, value: int, thresh: int, minPitch: int, maxPitch: int) -> (bool, int):
     if value < thresh: return False, 0
-    return True, max( min( round(minPitch + (float(value) / 255.0) * (maxPitch - minPitch)), maxPitch ), minPitch )
+    return True, max( min( round(minPitch + math.sqrt((float(value) / 255.0)) * (maxPitch - minPitch)), maxPitch ), minPitch )
 
 def getVolumeFromPercentage(percent: float, thresh: float, minVolume: int, maxVolume: int) -> (bool, int):
     if percent < thresh: return False, 0
     return True, max( min( round(minVolume + 5.0 * percent * (maxVolume - minVolume)), maxVolume ), minVolume )
 
 
-def addNotesFromFrame(midiFiles, frame: np.ndarray, timeBetweenNotes: float, noteIndex: int,
-                      threshPitch: int = 45, minPitch: int = 35, maxPitch: int = 120, stepPitch: int = 5,
-                      threshVolume: int = 30, minVolume: int = 15, maxVolume: int = 100):
+
+def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperHsv: np.ndarray,
+                      timeBetweenNotes: float, noteIndex: int,
+                      threshPitch: int = 35, minPitch: int = 30, maxPitch: int = 120,
+                      threshVolume: int = 20, minVolume: int = 15, maxVolume: int = 100):
+    
+    mask = 0
+    if (lowerHsv[0] > upperHsv[0]):
+        mask1 = cv2.inRange(frame, lowerHsv, np.array([179, upperHsv[1], upperHsv[2]]))
+        mask2 = cv2.inRange(frame, np.array([0, lowerHsv[1], lowerHsv[2]]), upperHsv)
+        mask = cv2.bitwise_or(mask1, mask2)
+        frame = cv2.bitwise_and(frame, frame, mask = mask)
+    else:
+        mask = cv2.inRange(frame, lowerHsv, upperHsv)
+        frame = cv2.bitwise_and(frame, frame, mask = mask)
+
     height, width, _ = frame.shape
     frArray = np.zeros((128, 16), dtype=float)
+    maskArray = np.zeros((16), dtype=float)
     frame = cv2.convertScaleAbs(frame, alpha = float(maxPitch - minPitch) / 255.0, beta = minPitch)
 
     for i in range(height):
         for j in range(width):
             pitch = frame[i][j][2]
             balanceIndex = getChannelFromBalance(round(float(j) / (width-1) * 127.0))
-            frArray[pitch][balanceIndex] += 1
+            frArray[pitch][balanceIndex] += mask[i][j]
+            maskArray[balanceIndex] += mask[i][j]
+
+    for i in range(0, 128):
+        for j in range(0, 16):
+            frArray[i][j] /= (maskArray[j] + 5.0 * 255)
+
+    verticalKernel = np.array([0.5, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.5], dtype=float)
+    verticalKernel *= 1.1
+
+    horizontalKernel = np.array([0.45, 0.85, 1.0, 0.85, 0.45], dtype=float)
+    horizontalKernel *= 0.9
 
     def frArrayModifyVertical(x):
-        kernel = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-        y = np.convolve(x, kernel, mode='full')
-        y = np.roll(y, - (len(kernel) // 2))
+        y = np.convolve(x, verticalKernel, mode='full')
+        y = np.roll(y, - (len(verticalKernel) // 2))
         return y
 
     def frArrayModifyHorizontal(x):
-        kernel = [0.4, 1.0, 0.4]
-        y = np.convolve(x, kernel, mode='full')
-        y = np.roll(y, - (len(kernel) // 2))
+        y = np.convolve(x, horizontalKernel, mode='full')
+        y = np.roll(y, - (len(horizontalKernel) // 2))
         return y
     
     frArray = np.apply_along_axis(frArrayModifyVertical, 0, frArray) # vertical
     frArray = np.apply_along_axis(frArrayModifyHorizontal, 1, frArray) # orizontal
 
-    frArray *= (maxVolume - minVolume) / float(height * width / 16.0)
+    frArray *= (maxVolume - minVolume)
     frArray += minVolume
 
-    for i in range(threshPitch, 128, stepPitch):
-        for j in range(16):
-            if round(frArray[i][j]) > threshVolume:
+    global currentPitchFamily
+
+    for i in currentPitchFamily:
+        if i < threshPitch:
+            continue
+        if i > maxPitch:
+            break
+        for j in range(0, 16, 1):
+            if frArray[i][j] > threshVolume:
                 volume = max( min( round(frArray[i][j]), maxVolume), minVolume)
                 addNoteAtIndex(midiFiles, timeBetweenNotes, noteIndex, i, volume, j)
 
 
-def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
+
+def getMidisFromVideo(videoPath: str, idString: str, callback):
+    cap = cv2.VideoCapture(videoPath)
+
+    timeBetweenNotes = 0.5
+    videoNewSize = 224
     videoLength = float(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
 
-    midiFiles = []
-    for i in range(30):
-        midiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+    violinSF = 'Levi_s_Violin.sf2'
+    pianoSF = 'Piano_Paradise.sf2'
+    harpSF = 'Open_Diapason_Pipe_Organ.sf2.sf2'
+    guitarSF = 'Pianoteq_8_Classical_Guitar.sf2'
+    fluteSF = 'Mell Flutes.SF2'
+    bassSF = 'BassLong.sf2'
+
+    lowerViolin = np.array([165, 35, 35])
+    upperViolin = np.array([15, 255, 220])
+    lowerPiano = np.array([15, 35, 35])
+    upperPiano = np.array([35, 255, 220])
+    lowerPiano2 = np.array([0, 0, 210])
+    upperPiano2 = np.array([179, 255, 255])
+    lowerHarp = np.array([35, 35, 35])
+    upperHarp = np.array([85, 255, 220])
+    lowerGuitar = np.array([85, 35, 35])
+    upperGuitar = np.array([100, 255, 220])
+    lowerFlute = np.array([100, 35, 35])
+    upperFlute = np.array([135, 255, 220])
+    lowerBass = np.array([135, 35, 35])
+    upperBass = np.array([165, 255, 220])
+    
+
+    violinMidiFiles = []
+    pianoMidiFiles = []
+    harpMidiFiles = []
+    guitarMidiFiles = []
+    fluteMidiFiles = []
+    bassMidiFiles = []
+    for i in range(20):
+        violinMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+        pianoMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+        harpMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+        guitarMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+        fluteMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
+        bassMidiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
 
     lastIndex = -1
     frameNumber = -1
 
+    global currentPitchFamily
+
+    currentPitchFamily = getRandomPitchFamily()
+    lastRandomizationTimestamp = 0.0
+    randomDuration = random.random() * 5.0 + 10.0
+
     frameExists, frame = cap.read()
     timestamp = float(cap.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0
     frameNumber += 1
-    callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT) / 2.0)
     while frameExists:
+        if timestamp - lastRandomizationTimestamp >= randomDuration:
+            currentPitchFamily = getRandomPitchFamily()
+            lastRandomizationTimestamp = timestamp
+            randomDuration = random.random() * 5.0 + 10.0
         index = round(timestamp / timeBetweenNotes)
         if index != lastIndex:
             lastIndex = index
-            height, width, _ = frame.shape
-            scaleFactor = min(256.0 / float(height), 256.0 / float(width))
-            if scaleFactor < 1.0:
-                frame = cv2.resize(frame, (round(width * scaleFactor), round(height * scaleFactor)))
             hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            addNotesFromFrame(midiFiles, hsvFrame, timeBetweenNotes, lastIndex)
+            height, width, _ = hsvFrame.shape
+            scaleFactor = min(float(videoNewSize) / float(height), float(videoNewSize) / float(width))
+            if scaleFactor < 1.0:
+                hsvFrame = cv2.resize(hsvFrame, (round(width * scaleFactor), round(height * scaleFactor)))
+            addNotesFromFrame(violinMidiFiles, hsvFrame, lowerViolin, upperViolin, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(pianoMidiFiles, hsvFrame, lowerPiano, upperPiano, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(pianoMidiFiles, hsvFrame, lowerPiano2, upperPiano2, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(harpMidiFiles, hsvFrame, lowerHarp, upperHarp, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(guitarMidiFiles, hsvFrame, lowerGuitar, upperGuitar, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(fluteMidiFiles, hsvFrame, lowerFlute, upperFlute, timeBetweenNotes, lastIndex)
+            addNotesFromFrame(bassMidiFiles, hsvFrame, lowerBass, upperBass, timeBetweenNotes, lastIndex)
+            
         frameExists, frame = cap.read()
         timestamp = float(cap.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0
         frameNumber += 1
-        callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT) / 2.0)
+    
+    lastCompletion = 0.5
 
-    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 1.0, 0.05, 0.05)
-    return midiFiles
+    postProcessing(violinMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(pianoMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(harpMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(guitarMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(fluteMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(bassMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+
+    violinMidiPath = idString + "_violin.mid"
+    pianoMidiPath = idString + "_piano.mid"
+    harpMidiPath = idString + "_harp.mid"
+    guitarMidiPath = idString + "_guitar.mid"
+    fluteMidiPath = idString + "_flute.mid"
+    bassMidiPath = idString + "_bass.mid"
+    
+    violinWavPath = idString + "_violin.wav"
+    pianoWavPath = idString + "_piano.wav"
+    harpWavPath = idString + "_harp.wav"
+    guitarWavPath = idString + "_guitar.wav"
+    fluteWavPath = idString + "_flute.wav"
+    bassWavPath = idString + "_bass.wav"
+    
+
+    callback(lastCompletion)
+    with open(violinMidiPath, "wb") as outf:
+        violinMidiFiles[0].writeFile(outf)
+    FluidSynth(violinMidiPath).midi_to_audio(violinSF, violinWavPath)
+    if len(violinMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(violinWavPath)
+        for index in range(1, len(violinMidiFiles)):
+            callback(lastCompletion + float(index) / len(violinMidiFiles) / 12.0)
+            with open(violinMidiPath, "wb") as outf:
+                violinMidiFiles[index].writeFile(outf)
+            FluidSynth(violinMidiPath).midi_to_audio(violinSF, violinWavPath)
+            wavi = AudioSegment.from_file(violinWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(violinWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+    callback(lastCompletion)
+    with open(pianoMidiPath, "wb") as outf:
+        pianoMidiFiles[0].writeFile(outf)
+    FluidSynth(pianoMidiPath).midi_to_audio(pianoSF, pianoWavPath)
+    if len(pianoMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(pianoWavPath)
+        for index in range(1, len(pianoMidiFiles)):
+            callback(lastCompletion + float(index) / len(pianoMidiFiles) / 12.0)
+            with open(pianoMidiPath, "wb") as outf:
+                pianoMidiFiles[index].writeFile(outf)
+            FluidSynth(pianoMidiPath).midi_to_audio(pianoSF, pianoWavPath)
+            wavi = AudioSegment.from_file(pianoWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(pianoWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+    callback(lastCompletion)
+    with open(harpMidiPath, "wb") as outf:
+        harpMidiFiles[0].writeFile(outf)
+    FluidSynth(harpMidiPath).midi_to_audio(harpSF, harpWavPath)
+    if len(harpMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(harpWavPath)
+        for index in range(1, len(harpMidiFiles)):
+            callback(lastCompletion + float(index) / len(harpMidiFiles) / 12.0)
+            with open(harpMidiPath, "wb") as outf:
+                harpMidiFiles[index].writeFile(outf)
+            FluidSynth(harpMidiPath).midi_to_audio(harpSF, harpWavPath)
+            wavi = AudioSegment.from_file(harpWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(harpWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+    callback(lastCompletion)
+    with open(guitarMidiPath, "wb") as outf:
+        guitarMidiFiles[0].writeFile(outf)
+    FluidSynth(guitarMidiPath).midi_to_audio(guitarSF, guitarWavPath)
+    if len(guitarMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(guitarWavPath)
+        for index in range(1, len(guitarMidiFiles)):
+            callback(lastCompletion + float(index) / len(guitarMidiFiles) / 12.0)
+            with open(guitarMidiPath, "wb") as outf:
+                guitarMidiFiles[index].writeFile(outf)
+            FluidSynth(guitarMidiPath).midi_to_audio(guitarSF, guitarWavPath)
+            wavi = AudioSegment.from_file(guitarWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(guitarWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+    callback(lastCompletion)
+    with open(fluteMidiPath, "wb") as outf:
+        fluteMidiFiles[0].writeFile(outf)
+    FluidSynth(fluteMidiPath).midi_to_audio(fluteSF, fluteWavPath)
+    if len(fluteMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(fluteWavPath)
+        for index in range(1, len(fluteMidiFiles)):
+            callback(lastCompletion + float(index) / len(fluteMidiFiles) / 12.0)
+            with open(fluteMidiPath, "wb") as outf:
+                fluteMidiFiles[index].writeFile(outf)
+            FluidSynth(fluteMidiPath).midi_to_audio(fluteSF, fluteWavPath)
+            wavi = AudioSegment.from_file(fluteWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(fluteWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+    callback(lastCompletion)
+    with open(bassMidiPath, "wb") as outf:
+        bassMidiFiles[0].writeFile(outf)
+    FluidSynth(bassMidiPath).midi_to_audio(bassSF, bassWavPath)
+    if len(bassMidiFiles) > 1:
+        wav0 = AudioSegment.from_file(bassWavPath)
+        for index in range(1, len(bassMidiFiles)):
+            callback(lastCompletion + float(index) / len(bassMidiFiles) / 12.0)
+            with open(bassMidiPath, "wb") as outf:
+                bassMidiFiles[index].writeFile(outf)
+            FluidSynth(bassMidiPath).midi_to_audio(bassSF, bassWavPath)
+            wavi = AudioSegment.from_file(bassWavPath)
+            wav0 = wav0.overlay(wavi)
+        wav0.export(bassWavPath, "wav")
+    lastCompletion += 1.0 / 12.0
+    
+
+    segmViolin = AudioSegment.from_file(violinWavPath)
+    segmPiano = AudioSegment.from_file(pianoWavPath)
+    segmHarp = AudioSegment.from_file(harpWavPath)
+    segmGuitar = AudioSegment.from_file(guitarWavPath)
+    segmFlute = AudioSegment.from_file(fluteWavPath)
+    segmBass = AudioSegment.from_file(bassWavPath)
+
+    segmAll = segmViolin.overlay(segmPiano).overlay(segmHarp).overlay(segmGuitar).overlay(segmFlute).overlay(segmBass)
+    segmAll.export(idString + "_all.wav", "wav")
+
+    callback(1.0)
+    
+    return idString + "_all.wav"
 
 
 # test
 
-from piano_convert import midi_file, make_wav
-
 def processingCallback(status: float):
     print("Loading:  " + str(status * 100.0) + " %")
 
-midiFiles = getMidisFromVideo(cv2.VideoCapture("orionnebula.mp4"), 0.2, processingCallback)
-
-midiPaths = []
-
-for i in range(len(midiFiles)):
-    midiPaths.append(midi_file("custom_mid_" + str(i) + ".mid", "Piano_Paradise.sf2"))
-    with open("custom_mid_" + str(i) + ".mid", 'wb') as outf:
-        midiFiles[i].writeFile(outf)
-
-make_wav(midiPaths, "funnyout.wav")
+getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
