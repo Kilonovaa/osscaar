@@ -61,7 +61,7 @@ def upload(sid, file_data):
     bucket = "data"
     random_base64 = ''.join(random.choices(
         string.ascii_lowercase + string.digits, k=10))
-    file_path = f"./punlic/{sid}{random_base64}.mp4"
+    file_path = f"./public/{sid}{random_base64}.mp4"
 
     file_size = sys.getsizeof(file_data)
 
