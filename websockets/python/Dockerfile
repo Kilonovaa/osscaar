@@ -13,6 +13,7 @@ RUN pip install requests
 RUN pip install requests_toolbelt
 RUN pip install flask
 RUN pip install eventlet
+RUN pip install flask-socketio
 # Install pipenv
 # RUN pip install pipenv
 
