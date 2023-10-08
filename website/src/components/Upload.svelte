@@ -7,7 +7,7 @@
 
   socket.on("upload_response", async (info) => {
     console.log(info)
-    progress = 0
+    progress = info.progress
     // document.getElementById("file").value = ""
   })
 

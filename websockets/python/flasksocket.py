@@ -1,9 +1,5 @@
-# set async_mode to 'threading', 'eventlet', 'gevent' or 'gevent_uwsgi' to
-# force a mode else, the best mode is selected automatically from what's
-# installed
-import signal
 import socketio
-from flask import Flask, render_template
+from flask import Flask
 import eventlet
 
 import socketio
@@ -21,7 +17,7 @@ supabase: Client = create_client(url, key)
 async_mode = None
 
 
-sio = socketio.Server(logger=True, async_mode=None, cors_allowed_origins='*',
+sio = socketio.Server(logger=True, async_mode="threading", cors_allowed_origins='*',
                       max_http_buffer_size=1024 ** 3)
 app = Flask(__name__)
 app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
@@ -76,15 +72,14 @@ def upload(sid, file_data):
     )
 
     def uploadProgress(monitor):
-        progress = monitor.bytes_read / file_size
+        file_size = monitor.len
+        uploaded_bytes = monitor.bytes_read
+        progress = uploaded_bytes / file_size
 
-        def sendProgress(progress):
-            print(f"Upload progress: {progress * 100}%")
-            sio.emit('upload_response', {
-                "progress": progress * 100
-            })
-
-        sendProgress(progress)
+        print(f"Upload progress: {progress * 100}%")
+        sio.emit('upload_response', {
+            "progress": progress * 100
+        }, room=sid)
 
     monitor = MultipartEncoderMonitor(multipart_encoder, uploadProgress)
 
@@ -99,24 +94,24 @@ def upload(sid, file_data):
         print("Upload successful.")
         sio.emit('upload_response', {
             "status": "success",
-        })
+            "progress": 100
+        }, room=sid)
     else:
         print(f"Upload failed with status code: {response.status_code}")
         print(response.text)
         sio.emit('upload_response', {
             "status": "failure",
             "code": response.status_code,
-        })
+            "error": response.text,
+            "progress": 0
+        }, room=sid)
 
 
 if __name__ == '__main__':
     if sio.async_mode == 'threading':
-        # deploy with Werkzeug
-        app.run(threaded=True)
+        app.run(threaded=True, port=8000)
     elif sio.async_mode == 'eventlet':
-        # deploy with eventlet
         import eventlet
         import eventlet.wsgi
         eventlet.wsgi.server(eventlet.listen(('', 8000)), app)
-
     print("Server terminated gracefully.")
