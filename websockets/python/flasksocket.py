@@ -59,7 +59,9 @@ def upload(sid, file_data):
     supaURL = "https://nwhobhigrgxtpnwydpxj.supabase.co"
     key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
     bucket = "data"
-    file_path = "./testing/test.mp4"
+    random_base64 = ''.join(random.choices(
+        string.ascii_lowercase + string.digits, k=10))
+    file_path = f"./punlic/{sid}{random_base64}.mp4"
 
     file_size = sys.getsizeof(file_data)
 

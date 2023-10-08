@@ -85,14 +85,12 @@ async def upload(sid, file_data):
 
     response = requests.post(url, data=monitor, headers=headers)
 
-    while monitor.bytes_read < file_size:
-        await uploadProgress(monitor)
-        await sio.sleep(1)
-
     if response.status_code == 200:
         print("Upload successful.")
         await sio.emit('upload_response', {
             "status": "success",
+            "url": supabase.storage.from_('bucket_name').get_public_url(file_path)
+
         }, room=sid)
     else:
         print(f"Upload failed with status code: {response.status_code}")

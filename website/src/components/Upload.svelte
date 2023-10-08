@@ -8,10 +8,16 @@
   socket.on("upload_response", async (info) => {
     console.log(info)
     progress = info.progress
-    // document.getElementById("file").value = ""
+    if (progress >= 100) {
+      document.getElementById("file").value = ""
+    }
+    if (info.hasOwnProperty("error")) {
+      alert(JSON.parse(info.error).message)
+    }
   })
 
   function upload() {
+    progress = 0
     const file = document.getElementById("file").files[0]
     console.log(file)
     const reader = new FileReader()
@@ -31,6 +37,24 @@
   }
 </script>
 
-<input type="file" id="file" name="file" />
-<input type="button" value="Upload" on:click={upload} />
-<progress value={progress} max="100" />
+<section>
+  <input type="file" id="file" name="file" on:input={upload} accept=".mp4" />
+  {#if progress > 0 && progress < 100}
+    <progress value={progress} max="100" />
+  {/if}
+</section>
+
+<style>
+  section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 4rem;
+    border-radius: 1rem;
+    min-width: fit-content;
+    background-color: white;
+    color: black;
+    width: clamp(20rem, 50vw, 50rem);
+    margin: 3rem auto;
+  }
+</style>

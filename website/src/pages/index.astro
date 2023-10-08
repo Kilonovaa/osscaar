@@ -1,19 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro"
-import Card from "../components/Card.astro"
 import Upload from "../components/Upload.svelte"
-import ShowAuth from "../components/ShowAuth.svelte"
-import Auth from "../components/Auth.svelte"
-import { get } from "svelte/store"
-import { user } from "../lib/supabase"
+import Nav from "../components/Nav.astro"
 ---
 
-<Layout title="Welcome to Kilonova.">
+<Layout title="Welcome to Selenotone.">
   <main>
-    <!-- <ShowAuth client:load /> -->
-    <h1>Kilonova</h1>
     <Upload client:load />
-    <Auth client:load />
   </main>
 </Layout>
 
