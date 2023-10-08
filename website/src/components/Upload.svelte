@@ -114,7 +114,7 @@
 <style>
   section {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     padding-block: 2rem;
     padding-inline: 2rem;

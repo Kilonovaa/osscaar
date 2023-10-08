@@ -153,6 +153,7 @@
     height: 0.5em;
     border-radius: 0.5em;
     overflow: hidden;
+    background-color: white;
   }
 
   .progress {
