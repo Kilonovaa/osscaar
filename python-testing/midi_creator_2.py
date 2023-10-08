@@ -274,6 +274,8 @@ def getMidisFromVideo(videoPath: str, idString: str, myCallback):
     nrFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     videoLength = float(nrFrames) / cap.get(cv2.CAP_PROP_FPS)
 
+    callback(0, "Starting the magic...", nrFrames)
+
     violinSF = 'Levi_s_Violin.sf2'
     pianoSF = 'Piano_Paradise.sf2'
     harpSF = 'Open_Diapason_Pipe_Organ.sf2.sf2'
