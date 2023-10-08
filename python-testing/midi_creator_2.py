@@ -71,7 +71,7 @@
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 
-def addNoteAtIndex(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
+def coolAddNote(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
                    noteStart: float, pitch: int, volume: int, balance: float,
                    nrChannels: int = 16) -> float:
     
@@ -139,15 +139,15 @@ midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
 currentMidiLength = 0.0
 timeBetweenNotes = 0.7
 
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 0, 60, 100, -1)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 1, 60, 100, -0.75)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 2, 60, 100, -0.5)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 3, 60, 100, -0.25)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 4, 60, 100, 0.0)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 5, 60, 100, 0.25)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 6, 60, 100, 0.5)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 7, 60, 100, 0.75)
-currentMidiLength = addNoteAtIndex(midiFiles, currentMidiLength, timeBetweenNotes, 8, 60, 100, 1.0)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 0, 60, 100, -1)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 1, 60, 100, -0.75)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 2, 60, 100, -0.5)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 3, 60, 100, -0.25)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 4, 60, 100, 0.0)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 5, 60, 100, 0.25)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 6, 60, 100, 0.5)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 7, 60, 100, 0.75)
+currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 8, 60, 100, 1.0)
 
 postProcessing(midiFiles, currentMidiLength, timeBetweenNotes, 120, 0.4, 0.5, 0.3, 0.2)
 
