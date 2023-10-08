@@ -27,15 +27,22 @@
     console.log(info)
     progress = info.progress
     todo.uploadFIle = progress
-    // if (progress >= 100) {
-    //   document.getElementById("file").value = ""
-    // }
     if (info.hasOwnProperty("error")) {
       alert(JSON.parse(info.error).message)
     }
     if (info.hasOwnProperty("url")) {
       videourl = info.url
     }
+  })
+  socket.on("sound_progress", async (info) => {
+    console.log(info)
+    todo.processSound = info.progress
+    if (info.hasOwnProperty("error")) {
+      alert(JSON.parse(info.error).message)
+    }
+    // if (info.hasOwnProperty("url")) {
+    //   videourl = info.url
+    // }
   })
   socket.on("sound", async (info) => {
     console.log(info)
