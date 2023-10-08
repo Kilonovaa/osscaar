@@ -84,7 +84,6 @@ def addNoteAtIndex(midiFiles, timeBetweenNotes: float,
     noteStart = noteIndex * timeBetweenNotes
     noteDuration = timeBetweenNotes * len(midiFiles)
     balanceChannel = getChannelFromBalance(balance)
-    print(str(noteIndex % len(midiFiles)) + " " + str(noteStart) + " " + str(noteDuration))
     midiFiles[noteIndex % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
 
 
@@ -146,8 +145,8 @@ def getVolumeFromPercentage(percent: float, thresh: float, minVolume: int, maxVo
 
 
 def addNotesFromFrame(midiFiles, frame: np.ndarray, timeBetweenNotes: float, noteIndex: int,
-                      threshPitch: int = 40, minPitch: int = 30, maxPitch: int = 100,
-                      threshVolume: int = 25, minVolume: int = 15, maxVolume: int = 120):
+                      threshPitch: int = 45, minPitch: int = 35, maxPitch: int = 120, stepPitch: int = 5,
+                      threshVolume: int = 30, minVolume: int = 15, maxVolume: int = 100):
     height, width, _ = frame.shape
     frArray = np.zeros((128, 16), dtype=float)
     frame = cv2.convertScaleAbs(frame, alpha = float(maxPitch - minPitch) / 255.0, beta = minPitch)
@@ -159,13 +158,15 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, timeBetweenNotes: float, not
             frArray[pitch][balanceIndex] += 1
 
     def frArrayModifyVertical(x):
-        y = np.convolve(x, [1.0] * 15, mode='full')
-        y = np.roll(y, -7)
+        kernel = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        y = np.convolve(x, kernel, mode='full')
+        y = np.roll(y, - (len(kernel) // 2))
         return y
 
     def frArrayModifyHorizontal(x):
-        y = np.convolve(x, [0.5, 1.0, 0.5], mode='full')
-        y = np.roll(y, -1)
+        kernel = [0.4, 1.0, 0.4]
+        y = np.convolve(x, kernel, mode='full')
+        y = np.roll(y, - (len(kernel) // 2))
         return y
     
     frArray = np.apply_along_axis(frArrayModifyVertical, 0, frArray) # vertical
@@ -174,7 +175,7 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, timeBetweenNotes: float, not
     frArray *= (maxVolume - minVolume) / float(height * width / 16.0)
     frArray += minVolume
 
-    for i in range(threshPitch, 128):
+    for i in range(threshPitch, 128, stepPitch):
         for j in range(16):
             if round(frArray[i][j]) > threshVolume:
                 volume = max( min( round(frArray[i][j]), maxVolume), minVolume)
@@ -185,7 +186,7 @@ def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
     videoLength = float(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
 
     midiFiles = []
-    for i in range(15):
+    for i in range(30):
         midiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
 
     lastIndex = -1
@@ -210,7 +211,7 @@ def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
         frameNumber += 1
         callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.20, 1.0, 0.05, 0.05)
+    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 1.0, 0.05, 0.05)
     return midiFiles
 
 
@@ -221,7 +222,7 @@ from piano_convert import midi_file, make_wav
 def processingCallback(status: float):
     print("Loading:  " + str(status * 100.0) + " %")
 
-midiFiles = getMidisFromVideo(cv2.VideoCapture("MVI_2939.MP4"), 1.0, processingCallback)
+midiFiles = getMidisFromVideo(cv2.VideoCapture("orionnebula.mp4"), 0.2, processingCallback)
 
 midiPaths = []
 
