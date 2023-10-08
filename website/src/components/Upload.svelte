@@ -2,8 +2,10 @@
   import { io } from "socket.io-client"
   import { url } from "../lib/socket"
   import { supabase } from "../lib/supabase"
+  import AudioPlayer from "./AudioPlayer.svelte"
   const socket = io(url)
   let videourl = ""
+  let soundUrl = ""
   let progress = 0
 
   socket.on("upload_response", async (info) => {
@@ -17,6 +19,12 @@
     }
     if (info.hasOwnProperty("url")) {
       videourl = info.url
+    }
+  })
+  socket.on("sound", async (info) => {
+    console.log(info)
+    if (info.hasOwnProperty("url")) {
+      soundUrl = info.url
     }
   })
 
@@ -50,22 +58,53 @@
       return video
     }
   }
+  function unmute(event) {
+    var vid = document.getElementById("video")
+    console.log(event)
+    vid.currentTime = event.detail
+  }
+  function mute(event) {
+    var vid = document.getElementById("video")
+    console.log(event)
+    if (event.detail == false) {
+      vid.play()
+    } else {
+      vid.pause()
+    }
+  }
 </script>
 
 <section>
-  <div>
-    <input type="file" id="file" name="file" on:input={upload} accept=".mp4" />
-    {#if progress > 0 && progress < 100}
-      <progress value={progress} max="100" />
-    {/if}
-  </div>
+  {#if videourl == ""}
+    <div>
+      <input
+        type="file"
+        id="file"
+        name="file"
+        on:input={upload}
+        accept=".mp4"
+      />
+      {#if progress > 0 && progress < 100}
+        <progress value={progress} max="100" />
+      {/if}
+    </div>
+  {/if}
   {#if videourl != ""}
     {#await fetchVideo(videourl)}
       <p>loading...</p>
     {:then video}
-      <video controls>
-        <source src={video} type="video/mp4" />
-      </video>
+      <div class="media">
+        <video preload="auto" controls="" id="video" muted>
+          <source src={video} type="video/mp4" />
+        </video>
+        <AudioPlayer
+          src={soundUrl}
+          title="Lazar"
+          artist="Moska"
+          on:paused={mute}
+          on:change={unmute}
+        />
+      </div>
     {:catch error}
       <p>{error.message}</p>
     {/await}
@@ -83,8 +122,9 @@
     min-width: fit-content;
     background-color: #40404b;
     width: clamp(1rem, 80vw, 70rem);
-    height: 60vh;
+    min-height: 60vh;
     margin: 3rem auto;
+    position: relative;
   }
   div {
     flex: 1;
@@ -92,9 +132,16 @@
     flex-direction: column;
     margin-bottom: 1rem;
   }
+  .media {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
   video {
     height: 100%;
     max-height: 50vh;
+    max-width: 80vw;
     object-fit: cover;
     border-radius: 1.5rem;
   }

@@ -91,6 +91,12 @@ def upload(sid, file_data):
 
     response = requests.post(url, data=monitor, headers=headers)
 
+    sio.emit('sound', {
+        "status": "success",
+        "progress": 100,
+        "url": "/sound.wav"
+    }, room=sid)
+
     if response.status_code == 200:
         print("Upload successful.")
         sio.emit('upload_response', {
