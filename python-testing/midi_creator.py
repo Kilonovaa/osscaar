@@ -16,20 +16,88 @@ frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 
 # create your MIDI object
-mf = MIDIFile(numTracks=1, eventtime_is_ticks=False)     # only 1 track
+mf = MIDIFile(1)     # only 1 track
 track = 0   # the only track
 time = 0    # start at the beginning
 mf.addTrackName(track, time, "Sample Track")
-mf.addTempo(track, time, 120) # tempo is in beats per minute
-mf.addTempo(track, time,2000)
+mf.addTempo(track, time, 220)
 
-# list of controllers: https://www.mixagesoftware.com/en/midikit/help/HTML/controllers.html
-# volume is controller 7
-
-# add some notes
 channel = 0
-volume = 0
+volume = 100
 k=0
+
+offset = [
+    5,
+    15,
+    10,
+    20
+]
+scade = -20
+
+for j in range(1,2001):
+    for i in range(0,10):
+        if i%4==0:
+            for x in range (0, 4):
+                pitch = 65 + offset[x]
+                time = (i*4 + x)*j       
+                duration = 600  
+                mf.addNote(track, channel, pitch, time, duration, 100)   
+        elif i%4==1:
+            for x in range (0, 4):
+                pitch = 36 + offset[x]
+                time = (i*4 + x)*j
+                duration = 600
+                mf.addNote(track, channel, pitch, time, duration, 100)  
+        if i%4==2:
+            for x in range (0, 4):
+                pitch = 48 + offset[x]
+                time = (i*4 + x)*j
+                duration = 600
+                mf.addNote(track, channel, pitch, time, duration, 100)   
+        elif i%4==3:
+            for x in range (0, 4):
+                pitch = 41 + offset[x]
+                time = (i*4 + x)*j          
+                duration = 6000 
+                mf.addNote(track, channel, pitch, time, duration, 100)  
+       
+
+# for i in range(0,2000):
+#     if i%2==0:
+#         pitch = 30         
+#         time = i             
+#         duration = 20       
+#         mf.addNote(track, channel, pitch, time, duration, 100)
+#         for j in range(1,21):
+#             if j%2==0:
+#                 pitch = 50         
+#                 time = i+j             
+#                 duration = 1      
+#                 mf.addNote(track, channel, pitch, time, duration, 50)
+#             else:
+#                 pitch = 60         
+#                 time = i+j             
+#                 duration = 1      
+#                 mf.addNote(track, channel, pitch, time, duration, 50)
+#     else:
+#         pitch = 40         
+#         time = i             
+#         duration = 20       
+#         mf.addNote(track, channel, pitch, time, duration, 100)
+#         for j in range(1,21):
+#             if j%2==0:
+#                 pitch = 50         
+#                 time = i+j             
+#                 duration = 1      
+#                 mf.addNote(track, channel, pitch, time, duration, 50)
+#             else:
+#                 pitch = 60         
+#                 time = i+j             
+#                 duration = 1      
+#                 mf.addNote(track, channel, pitch, time, duration, 50)
+
+
+"""
 for i in range(0,int(len(frame_hsv)/10)):
     for j in range(0,len(frame_hsv[0])):
         if frame_hsv[i][j][2]==0:
@@ -46,7 +114,7 @@ for i in range(0,int(len(frame_hsv)/10)):
         mf.addControllerEvent(track,channel,k,7,volume)
         k+=1
         if volume<100:
-            volume+=1
+            volume+=1"""
         
 
 
@@ -60,7 +128,11 @@ midis.append(midi_file(path='output.mid',soundfont='Piano_Paradise.sf2'))
 make_wav(midis,'out.wav')
 change_vol('out.wav','out.wav',20)
 
-def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
+"""def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
+    for i in range(0,len(frame)):
+        for j in range(0,len(frame[0])):
+
+
     return
 
 def video2wav(video_path:str,out_path:str):
@@ -73,7 +145,7 @@ def video2wav(video_path:str,out_path:str):
         image2AddNote()
         flag, image = cam.read()
 
-    make_wav(midis,out_path)
+    make_wav(midis,out_path)"""
 
 
 
