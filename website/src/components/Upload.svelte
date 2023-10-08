@@ -16,9 +16,9 @@
     uploadSound: 0,
   }
   let names = {
-    processFile: "Processing File",
+    processFile: "Preparing File",
     uploadFIle: "Uploading File",
-    processSound: "Processing Sound",
+    processSound: "Generation Sound",
     uploadSound: "Uploading Sound",
   }
 
@@ -103,6 +103,7 @@
         {/each}
       {:else}
         <h1>Selenotone, listen to the unknown.</h1>
+        <p>Use headphones for best experience.</p>
         <label for="file">Upload Video</label>
         <input
           type="file"
@@ -140,6 +141,8 @@
   h1 {
     font-size: clamp(2.5rem, 5vw, 4rem);
     text-align: center;
+    margin: 0;
+    line-height: 1;
   }
   input {
     display: none;
