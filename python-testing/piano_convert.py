@@ -22,9 +22,9 @@ def make_wav(midis: list,wav_out_path):
     if len(midis) > 1:
         for index in range(1, len(midis)):
             FluidSynth(midis[index].path).midi_to_audio(midis[index].soundfont,"{}.wav".format(index))
-            wav0 = AudioSegment.from_file(wav_out_path)
-            wavi = AudioSegment.from_file("{}.wav".format(index))
-            wavi.overlay(wav0).export(wav_out_path, format='wav')
+            # wav0 = AudioSegment.from_file(wav_out_path)
+            # wavi = AudioSegment.from_file("{}.wav".format(index))
+            # wavi.overlay(wav0).export(wav_out_path, format='wav')
 
 def change_vol(wav_in_path, wav_out_path, db_change):
    (AudioSegment.from_wav(wav_in_path) + db_change).export(wav_out_path, "wav")

@@ -70,25 +70,29 @@
 
 from midiutil.MidiFile import MIDIFile
 import numpy as np
+import cv2
 
-def addNoteAtIndex(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
-                   noteIndex: int, pitch: int, volume: int, balance: float,
-                   nrChannels: int = 16) -> float:
+def getChannelFromBalance(balance: int) -> int:
+    return max( min( round(float(balance) / 127.0 * 15.0), 15 ), 0 )
+
+def getBalanceFromChannel(channel: int) -> int:
+    return max( min( round(float(channel) / 15.0 * 127.0), 127 ), 0 )
+
+def addNoteAtIndex(midiFiles: list[MIDIFile], timeBetweenNotes: float,
+                   noteIndex: int, pitch: int, volume: int, balance: int) -> float:
     
     noteStart = noteIndex * timeBetweenNotes
     noteDuration = timeBetweenNotes * len(midiFiles)
-    # balance: [-1, 1]
-    balanceChannel = max( min( round((float(balance) + 1.0) / 2.0 * (nrChannels-1)), nrChannels-1 ), 0 )
+    balanceChannel = getChannelFromBalance(balance)
+    print(str(noteIndex % len(midiFiles)) + " " + str(noteStart) + " " + str(noteDuration))
     midiFiles[noteIndex % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
-    return max(midiLength, noteStart)
 
-def addNoteAtTime(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
-                   noteStart: float, pitch: int, volume: int, balance: float,
-                   nrChannels: int = 16) -> float:
+
+def addNoteAtTime(midiFiles: list[MIDIFile], timeBetweenNotes: float,
+                   noteStart: float, pitch: int, volume: int, balance: int) -> float:
     
-    addNoteAtIndex(midiFiles, midiLength, timeBetweenNotes,
-                   round(noteStart / timeBetweenNotes), pitch, volume, balance,
-                   nrChannels)
+    addNoteAtIndex(midiFiles, timeBetweenNotes,
+                   round(noteStart / timeBetweenNotes), pitch, volume, balance)
 
 
 def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
@@ -97,19 +101,20 @@ def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNote
                    volumeSlopeUpDuration: float,
                    volumeSlopeDownDuration: float,
                    volumeZero2Duration: float,
-                   nrChannels: int = 16,
                    maxVolume: int = 127,
                    maxExpression: int = 127,
-                   maxBalance: int = 127,
                    incVolumeResolution: float = 2.5,
                    decVolumeResolution: float = 3.5):
     
     volumeMaxDuration = timeBetweenNotes * len(midiFiles) - (volumeZeroDuration + volumeSlopeUpDuration + volumeSlopeDownDuration + volumeZero2Duration)
     assert(volumeMaxDuration >= 0.0)
+
+    for i in range(1, len(midiFiles)):
+        midiFiles[i].addNote(track=7, channel=7, pitch=1, time=0, duration=0.01, volume=1)
     
     for i in range(len(midiFiles)):
-        for ch in range(nrChannels):
-            balance = max(min(round(float(ch) / (nrChannels-1) * maxBalance), maxBalance), 0)
+        for ch in range(16):
+            balance = getBalanceFromChannel(ch)
             midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=8, parameter=balance)
             midiFiles[i].addTempo(track=ch, time=0, tempo=tempo) # tempo is in beats per minute
             
@@ -134,32 +139,90 @@ def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNote
                 j += volumeZero2Duration
 
 
+def getPitchFromHSV(hue: int, saturation: int, value: int, thresh: int, minPitch: int, maxPitch: int) -> (bool, int):
+    if value < thresh: return False, 0
+    return True, max( min( round(minPitch + (float(value) / 255.0) * (maxPitch - minPitch)), maxPitch ), minPitch )
+
+def getVolumeFromPercentage(percent: float, thresh: float, minVolume: int, maxVolume: int) -> (bool, int):
+    if percent < thresh: return False, 0
+    return True, max( min( round(minVolume + 5.0 * percent * (maxVolume - minVolume)), maxVolume ), minVolume )
+
+
+def addNotesFromFrame(midiFiles: list[MIDIFile], frame: np.ndarray, timeBetweenNotes: float, noteIndex: int,
+                      threshPitch: int = 40, minPitch: int = 30, maxPitch: int = 100,
+                      threshVolume: int = 25, minVolume: int = 15, maxVolume: int = 120):
+    height, width, _ = frame.shape
+    frArray = np.zeros((128, 16), dtype=float)
+    frame = cv2.convertScaleAbs(frame, alpha = float(maxPitch - minPitch) / 255.0, beta = minPitch)
+
+    for i in range(height):
+        for j in range(width):
+            pitch = frame[i][j][2]
+            balanceIndex = getChannelFromBalance(round(float(j) / (width-1) * 127.0))
+            frArray[pitch][balanceIndex] += 1
+
+    def frArrayModifyVertical(x):
+        y = np.convolve(x, [1.0] * 15, mode='full')
+        y = np.roll(y, -7)
+        return y
+
+    def frArrayModifyHorizontal(x):
+        y = np.convolve(x, [0.5, 1.0, 0.5], mode='full')
+        y = np.roll(y, -1)
+        return y
+    
+    frArray = np.apply_along_axis(frArrayModifyVertical, 0, frArray) # vertical
+    frArray = np.apply_along_axis(frArrayModifyHorizontal, 1, frArray) # orizontal
+
+    frArray *= (maxVolume - minVolume) / float(height * width / 16.0)
+    frArray += minVolume
+
+    for i in range(threshPitch, 128):
+        for j in range(16):
+            if round(frArray[i][j]) > threshVolume:
+                volume = max( min( round(frArray[i][j]), maxVolume), minVolume)
+                addNoteAtIndex(midiFiles, timeBetweenNotes, noteIndex, i, volume, j)
+
+
+def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
+    videoLength = float(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
+
+    midiFiles = [MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False)] * 15
+
+    lastIndex = -1
+    frameNumber = -1
+
+    frameExists, frame = cap.read()
+    timestamp = float(cap.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0
+    frameNumber += 1
+    callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    while frameExists:
+        index = round(timestamp / timeBetweenNotes)
+        if index != lastIndex:
+            lastIndex = index
+            height, width, _ = frame.shape
+            scaleFactor = min(256.0 / float(height), 256.0 / float(width))
+            if scaleFactor < 1.0:
+                frame = cv2.resize(frame, (round(width * scaleFactor), round(height * scaleFactor)))
+            hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            addNotesFromFrame(midiFiles, hsvFrame, timeBetweenNotes, lastIndex)
+        frameExists, frame = cap.read()
+        timestamp = float(cap.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0
+        frameNumber += 1
+        callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.20, 0.50, 0.05, 0.05)
+    return midiFiles
+
+
 # test
 
-midiFiles = []
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-midiFiles.append(MIDIFile(numTracks=16, eventtime_is_ticks=False))
-
-currentMidiLength = 0.0
-timeBetweenNotes = 0.7
-
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 0, 60, 100, -1)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 1, 60, 100, -0.75)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 2, 60, 100, -0.5)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 3, 60, 100, -0.25)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 4, 60, 100, 0.0)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 5, 60, 100, 0.25)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 6, 60, 100, 0.5)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 7, 60, 100, 0.75)
-currentMidiLength = coolAddNote(midiFiles, currentMidiLength, timeBetweenNotes, 8, 60, 100, 1.0)
-
-postProcessing(midiFiles, currentMidiLength, timeBetweenNotes, 120, 0.4, 0.5, 0.3, 0.2)
-
 from piano_convert import midi_file, make_wav
+
+def processingCallback(status: float):
+    print("Loading:  " + str(status * 100.0) + " %")
+
+midiFiles = getMidisFromVideo(cv2.VideoCapture("MVI_2939.MP4"), 3.0, processingCallback)
 
 midiPaths = []
 
