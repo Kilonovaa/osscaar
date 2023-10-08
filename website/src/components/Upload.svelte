@@ -369,14 +369,17 @@
     right: 3rem;
     bottom: -6rem;
     transform: rotate(10deg);
-    opacity: 0.6;
-    z-index: -1;
+    opacity: 0.7;
+    z-index: 0;
   }
   h1 {
     font-size: clamp(2.5rem, 5vw, 4rem);
     text-align: center;
     margin: 0;
     line-height: 1;
+  }
+  p {
+    text-align: center;
   }
   input {
     display: none;
@@ -427,6 +430,7 @@
     max-width: 80vw;
     object-fit: cover;
     border-radius: 1.5rem;
+    border: 1px solid white;
   }
   @media only screen and (max-width: 600px) {
     section {
@@ -438,6 +442,7 @@
       height: 30vh;
       opacity: 0.3;
       right: auto;
+      z-index: -1;
     }
   }
   .item {
