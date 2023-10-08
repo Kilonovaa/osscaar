@@ -32,12 +32,12 @@ def change_vol(wav_in_path, wav_out_path, db_change):
 
 
 #test
-midis=[]
-midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
-midis.append(midi_file('mond_1.mid','Piano_Paradise.sf2'))
-midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
+# midis=[]
+# midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
+# midis.append(midi_file('mond_1.mid','Piano_Paradise.sf2'))
+# midis.append(midi_file('deb_menu.mid','congas MW_1_0.SF2'))
 
-make_wav(midis,"combined.wav")
-change_vol("combined.wav","combined.wav",40)
+# make_wav(midis,"combined.wav")
+# change_vol("combined.wav","combined.wav",40)
         
     
