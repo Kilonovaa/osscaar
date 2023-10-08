@@ -1,4 +1,11 @@
-from aiohttp import web
+# set async_mode to 'threading', 'eventlet', 'gevent' or 'gevent_uwsgi' to
+# force a mode else, the best mode is selected automatically from what's
+# installed
+import signal
+import socketio
+from flask import Flask, render_template
+import eventlet
+
 import socketio
 import random
 import string
@@ -7,38 +14,43 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import requests
 from supabase import create_client, Client
 import sys
-import asyncio
 
 url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
 supabase: Client = create_client(url, key)
+async_mode = None
 
 
-sio = socketio.AsyncServer(
-    async_mode='aiohttp', cors_allowed_origins='*', max_http_buffer_size=1024 ** 3, logger=False)
-app = web.Application()
+sio = socketio.Server(logger=True, async_mode=None, cors_allowed_origins='*',
+                      max_http_buffer_size=1024 ** 3)
+app = Flask(__name__)
+app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+app.config['SECRET_KEY'] = 'secret!'
+thread = None
 
 
-sio.attach(app)
-
-
-async def background_task():
+def background_thread():
     """Example of how to send server generated events to clients."""
     count = 0
     while True:
-        await sio.sleep(10)
+        sio.sleep(10)
         count += 1
-        await sio.emit('my_response', {'data': 'Server generated count ' + str(count)})
+        sio.emit('server', {'data': 'Server generated event'})
 
 
 @sio.event
-async def disconnect_request(sid):
-    await sio.disconnect(sid)
+def my_room_event(sid, message):
+    sio.emit('my_response', {'data': message['data']}, room=message['room'])
 
 
 @sio.event
-async def connect(sid, environ):
-    print('Client connected')
+def disconnect_request(sid):
+    sio.disconnect(sid)
+
+
+@sio.event
+def connect(sid, environ):
+    sio.emit('my_response', {'data': 'Connected', 'count': 0}, room=sid)
 
 
 @sio.event
@@ -47,8 +59,7 @@ def disconnect(sid):
 
 
 @sio.on('upload')
-async def upload(sid, file_data):
-
+def upload(sid, file_data):
     supaURL = "https://nwhobhigrgxtpnwydpxj.supabase.co"
     key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
     bucket = "data"
@@ -64,17 +75,16 @@ async def upload(sid, file_data):
         }
     )
 
-    async def uploadProgress(monitor):
+    def uploadProgress(monitor):
         progress = monitor.bytes_read / file_size
 
-        async def sendProgress(progress):
+        def sendProgress(progress):
             print(f"Upload progress: {progress * 100}%")
-            await sio.emit('upload_response', {
-                "id": sid,
+            sio.emit('upload_response', {
                 "progress": progress * 100
-            }, room=sid)
+            })
 
-        await sendProgress(progress)
+        sendProgress(progress)
 
     monitor = MultipartEncoderMonitor(multipart_encoder, uploadProgress)
 
@@ -85,32 +95,28 @@ async def upload(sid, file_data):
 
     response = requests.post(url, data=monitor, headers=headers)
 
-    while monitor.bytes_read < file_size:
-        await uploadProgress(monitor)
-        await sio.sleep(1)
-
     if response.status_code == 200:
         print("Upload successful.")
-        await sio.emit('upload_response', {
+        sio.emit('upload_response', {
             "status": "success",
-        }, room=sid)
+        })
     else:
         print(f"Upload failed with status code: {response.status_code}")
         print(response.text)
-        await sio.emit('upload_response', {
+        sio.emit('upload_response', {
             "status": "failure",
             "code": response.status_code,
-        }, room=sid)
-
-# app.router.add_static('/static', 'static')
-
-
-async def init_app():
-
-    sio.start_background_task(background_task)
-    return app
+        })
 
 
 if __name__ == '__main__':
-    print("Starting server...")
-    web.run_app(init_app(), port=8000)
+    if sio.async_mode == 'threading':
+        # deploy with Werkzeug
+        app.run(threaded=True)
+    elif sio.async_mode == 'eventlet':
+        # deploy with eventlet
+        import eventlet
+        import eventlet.wsgi
+        eventlet.wsgi.server(eventlet.listen(('', 8000)), app)
+
+    print("Server terminated gracefully.")

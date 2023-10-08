@@ -7,17 +7,8 @@
 
   socket.on("upload_response", async (info) => {
     console.log(info)
-    progress = 0 // reset progress after upload
-    //clear file form form
-    // const { data, error } = await supabase.storage
-    //   .from("data")
-    //   .upload("public/image.png", document.getElementById("file").files[0], {
-    //     cacheControl: "3600",
-    //     upsert: false,
-    //   })
-    // if (error) console.log(error)
-    // console.log(data)
-    document.getElementById("file").value = ""
+    progress = 0
+    // document.getElementById("file").value = ""
   })
 
   function upload() {

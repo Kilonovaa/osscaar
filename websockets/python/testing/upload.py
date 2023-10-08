@@ -32,30 +32,3 @@ if response.status_code == 200:
 else:
     print(f"Upload failed with status code: {response.status_code}")
     print(response.text)
-
-
-def upload(file, progressFunction, finishFunction):
-    file_size = os.path.getsize(file)
-
-    url = f"{supaURL}/storage/v1/object/{bucket}/{file}"
-
-    multipart_encoder = MultipartEncoder(
-        fields={
-            'file': (os.path.basename(file), open(file, 'rb'), 'video/mp4')
-        }
-    )
-
-    monitor = MultipartEncoderMonitor(
-        multipart_encoder, lambda monitor: progressFunction(monitor.bytes_read, file_size))
-
-    headers = {
-        'Authorization': f'Bearer {key}',
-        'Content-Type': monitor.content_type
-    }
-
-    response = requests.post(url, data=monitor, headers=headers)
-
-    if response.status_code == 200:
-        finishFunction(True)
-    else:
-        finishFunction(False)

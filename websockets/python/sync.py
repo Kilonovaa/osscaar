@@ -1,4 +1,7 @@
+from flask import Flask, request
 from aiohttp import web
+import eventlet
+
 import socketio
 import random
 import string
@@ -7,48 +10,30 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import requests
 from supabase import create_client, Client
 import sys
-import asyncio
 
 url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
 supabase: Client = create_client(url, key)
 
 
-sio = socketio.AsyncServer(
-    async_mode='aiohttp', cors_allowed_origins='*', max_http_buffer_size=1024 ** 3, logger=False)
-app = web.Application()
+sio = socketio.Server(cors_allowed_origins='*',
+                      max_http_buffer_size=1024 ** 3, logger=False)
+
+app = socketio.WSGIApp(sio)
 
 
-sio.attach(app)
-
-
-async def background_task():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        await sio.sleep(10)
-        count += 1
-        await sio.emit('my_response', {'data': 'Server generated count ' + str(count)})
-
-
-@sio.event
-async def disconnect_request(sid):
-    await sio.disconnect(sid)
-
-
-@sio.event
-async def connect(sid, environ):
+@sio.on('connect')
+def connect():
     print('Client connected')
 
 
-@sio.event
-def disconnect(sid):
+@sio.on('disconnect')
+def disconnect():
     print('Client disconnected')
 
 
 @sio.on('upload')
-async def upload(sid, file_data):
-
+def upload(sid, file_data):
     supaURL = "https://nwhobhigrgxtpnwydpxj.supabase.co"
     key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
     bucket = "data"
@@ -64,17 +49,16 @@ async def upload(sid, file_data):
         }
     )
 
-    async def uploadProgress(monitor):
+    def uploadProgress(monitor):
         progress = monitor.bytes_read / file_size
 
-        async def sendProgress(progress):
+        def sendProgress(progress):
             print(f"Upload progress: {progress * 100}%")
-            await sio.emit('upload_response', {
-                "id": sid,
+            sio.emit('upload_response', {
                 "progress": progress * 100
-            }, room=sid)
+            })
 
-        await sendProgress(progress)
+        sendProgress(progress)
 
     monitor = MultipartEncoderMonitor(multipart_encoder, uploadProgress)
 
@@ -85,32 +69,20 @@ async def upload(sid, file_data):
 
     response = requests.post(url, data=monitor, headers=headers)
 
-    while monitor.bytes_read < file_size:
-        await uploadProgress(monitor)
-        await sio.sleep(1)
-
     if response.status_code == 200:
         print("Upload successful.")
-        await sio.emit('upload_response', {
+        sio.emit('upload_response', {
             "status": "success",
-        }, room=sid)
+        })
     else:
         print(f"Upload failed with status code: {response.status_code}")
         print(response.text)
-        await sio.emit('upload_response', {
+        sio.emit('upload_response', {
             "status": "failure",
             "code": response.status_code,
-        }, room=sid)
-
-# app.router.add_static('/static', 'static')
-
-
-async def init_app():
-
-    sio.start_background_task(background_task)
-    return app
+        })
 
 
 if __name__ == '__main__':
     print("Starting server...")
-    web.run_app(init_app(), port=8000)
+    eventlet.wsgi.server(eventlet.listen(('', 8000)), app)
