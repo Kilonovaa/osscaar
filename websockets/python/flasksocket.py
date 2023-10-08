@@ -97,7 +97,7 @@ def upload(sid, file_data):
         sio.emit('sound_progress', {
             "progress": progress
         }, room=sid)
-    audio_data = algorithm.processAudio(file_data, audioProcessCAllback)
+    audio_data = algorithm.processAudio(sid, file_data, audioProcessCAllback)
     # uploading the sound
 
     sound_path = f"./public/{sid}{random_base64}.wav"

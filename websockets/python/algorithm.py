@@ -1,7 +1,7 @@
 import time
 
 
-def processAudio(video_data, callback):
+def processAudio(user_id, video_data, callback):
     callback(0)
     audio_data = open("sound.wav", "rb").read()
     time.sleep(1)
