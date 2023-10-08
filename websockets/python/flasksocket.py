@@ -95,9 +95,11 @@ def upload(sid, file_data):
     response = requests.post(url, data=monitor, headers=headers)
     # processing the sound
 
-    def audioProcessCAllback(progress):
+    def audioProcessCAllback(progress, text, frames):
         sio.emit('sound_progress', {
-            "progress": progress
+            "progress": progress,
+            "text": text,
+            "frames": frames
         }, room=sid)
     audio_data = algorithm.processAudio(sid, file_data, audioProcessCAllback)
     # uploading the sound

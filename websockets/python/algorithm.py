@@ -19,7 +19,7 @@ def removeDirAndFilesInsideIfNotEmpty(path):
 
 
 def processAudio(user_id, video_data, callback):
-    callable(0)
+    # callable(0, "Starting processing audio...", video_data)
 
     createDirIfNotExists("./tmp/"+user_id+"/")
 

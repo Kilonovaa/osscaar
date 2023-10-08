@@ -9,9 +9,10 @@
   let soundUrl = ""
   let progress = 0
   let show = 0
-
+  let proccessingString = ""
+  let processingText = ""
   let todo = {
-    processFile: 100,
+    processFile: 0,
     uploadFIle: 0,
     processSound: 0,
     uploadSound: 0,
@@ -36,9 +37,23 @@
   })
   socket.on("sound_progress", async (info) => {
     console.log(info)
-    todo.processSound = info.progress * 100
     if (info.hasOwnProperty("error")) {
       alert(JSON.parse(info.error).message)
+    }
+    todo.processSound = info.progress * 100
+    if (info.hasOwnProperty("progress")) {
+      if (info.hasOwnProperty("frames") && info.hasOwnProperty("text")) {
+        if (info.progress * 100 <= 50) {
+          proccessingString =
+            ((info.frames * todo.processSound) / 50).toFixed(0) +
+            "/" +
+            info.frames +
+            " frames"
+        } else {
+          proccessingString = info.text
+        }
+        processingText = info.text
+      }
     }
     // if (info.hasOwnProperty("url")) {
     //   videourl = info.url
@@ -175,7 +190,12 @@
         {#each Object.entries(todo) as [key, value]}
           <div class="item">
             <progress {value} max="100" />
-            <p>{names[key]}</p>
+            {#if key == "processSound"}
+              <p>{names[key]} {proccessingString}</p>
+              <!-- <p>{processingText}</p> -->
+            {:else}
+              <p>{names[key]}</p>
+            {/if}
           </div>
         {/each}
       {:else}
