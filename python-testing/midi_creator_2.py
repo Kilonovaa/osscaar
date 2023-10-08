@@ -78,7 +78,7 @@ def getChannelFromBalance(balance: int) -> int:
 def getBalanceFromChannel(channel: int) -> int:
     return max( min( round(float(channel) / 15.0 * 127.0), 127 ), 0 )
 
-def addNoteAtIndex(midiFiles: list[MIDIFile], timeBetweenNotes: float,
+def addNoteAtIndex(midiFiles, timeBetweenNotes: float,
                    noteIndex: int, pitch: int, volume: int, balance: int) -> float:
     
     noteStart = noteIndex * timeBetweenNotes
@@ -88,14 +88,14 @@ def addNoteAtIndex(midiFiles: list[MIDIFile], timeBetweenNotes: float,
     midiFiles[noteIndex % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
 
 
-def addNoteAtTime(midiFiles: list[MIDIFile], timeBetweenNotes: float,
+def addNoteAtTime(midiFiles, timeBetweenNotes: float,
                    noteStart: float, pitch: int, volume: int, balance: int) -> float:
     
     addNoteAtIndex(midiFiles, timeBetweenNotes,
                    round(noteStart / timeBetweenNotes), pitch, volume, balance)
 
 
-def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
+def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
                    tempo: int,
                    volumeZeroDuration: float,
                    volumeSlopeUpDuration: float,
@@ -148,7 +148,7 @@ def getVolumeFromPercentage(percent: float, thresh: float, minVolume: int, maxVo
     return True, max( min( round(minVolume + 5.0 * percent * (maxVolume - minVolume)), maxVolume ), minVolume )
 
 
-def addNotesFromFrame(midiFiles: list[MIDIFile], frame: np.ndarray, timeBetweenNotes: float, noteIndex: int,
+def addNotesFromFrame(midiFiles, frame: np.ndarray, timeBetweenNotes: float, noteIndex: int,
                       threshPitch: int = 40, minPitch: int = 30, maxPitch: int = 100,
                       threshVolume: int = 25, minVolume: int = 15, maxVolume: int = 120):
     height, width, _ = frame.shape
@@ -187,7 +187,9 @@ def addNotesFromFrame(midiFiles: list[MIDIFile], frame: np.ndarray, timeBetweenN
 def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
     videoLength = float(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
 
-    midiFiles = [MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False)] * 15
+    midiFiles = []
+    for i in range(15):
+        midiFiles.append(MIDIFile(numTracks=16, adjust_origin=False, eventtime_is_ticks=False))
 
     lastIndex = -1
     frameNumber = -1
@@ -211,7 +213,7 @@ def getMidisFromVideo(cap: cv2.VideoCapture, timeBetweenNotes: float, callback):
         frameNumber += 1
         callback(float(frameNumber) / cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.20, 0.50, 0.05, 0.05)
+    postProcessing(midiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.20, 1.0, 0.05, 0.05)
     return midiFiles
 
 
@@ -222,7 +224,7 @@ from piano_convert import midi_file, make_wav
 def processingCallback(status: float):
     print("Loading:  " + str(status * 100.0) + " %")
 
-midiFiles = getMidisFromVideo(cv2.VideoCapture("MVI_2939.MP4"), 3.0, processingCallback)
+midiFiles = getMidisFromVideo(cv2.VideoCapture("MVI_2939.MP4"), 1.0, processingCallback)
 
 midiPaths = []
 
