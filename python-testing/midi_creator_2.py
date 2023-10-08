@@ -135,16 +135,16 @@ def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
                    tempo: int,
                    volumeZeroDuration: float,
                    volumeSlopeUpDuration: float,
+                   volumeMaxDuration: float,
                    volumeSlopeDownDuration: float,
-                   volumeZero2Duration: float,
                    callback,
                    maxVolume: int = 127,
                    maxExpression: int = 127,
                    incVolumeResolution: float = 2.5,
                    decVolumeResolution: float = 3.5):
     
-    volumeMaxDuration = timeBetweenNotes * len(midiFiles) - (volumeZeroDuration + volumeSlopeUpDuration + volumeSlopeDownDuration + volumeZero2Duration)
-    assert(volumeMaxDuration >= 0.0)
+    volumeZero2Duration = timeBetweenNotes * len(midiFiles) - (volumeZeroDuration + volumeSlopeUpDuration + volumeMaxDuration + volumeSlopeDownDuration)
+    assert(volumeZero2Duration >= 0.0)
     
     for i in range(len(midiFiles)):
         for ch in range(16):
@@ -214,11 +214,11 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
         for j in range(0, 16):
             frArray[i][j] /= (maskArray[j] + 5.0 * 255)
 
-    verticalKernel = np.array([0.5, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.5], dtype=float)
-    verticalKernel *= 1.1
+    verticalKernel = np.array([0.45, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.45], dtype=float)
+    verticalKernel *= 0.95
 
-    horizontalKernel = np.array([0.45, 0.85, 1.0, 0.85, 0.45], dtype=float)
-    horizontalKernel *= 0.9
+    horizontalKernel = np.array([0.35, 0.85, 1.0, 0.85, 0.35], dtype=float)
+    horizontalKernel *= 0.8
 
     def frArrayModifyVertical(x):
         y = np.convolve(x, verticalKernel, mode='full')
@@ -253,8 +253,8 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
 def getMidisFromVideo(videoPath: str, idString: str, callback):
     cap = cv2.VideoCapture(videoPath)
 
-    timeBetweenNotes = 0.5
-    videoNewSize = 224
+    timeBetweenNotes = 0.4
+    videoNewSize = 256
     videoLength = float(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
 
     violinSF = 'Levi_s_Violin.sf2'
@@ -335,12 +335,12 @@ def getMidisFromVideo(videoPath: str, idString: str, callback):
     
     lastCompletion = 0.5
 
-    postProcessing(violinMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
-    postProcessing(pianoMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
-    postProcessing(harpMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
-    postProcessing(guitarMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
-    postProcessing(fluteMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
-    postProcessing(bassMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.30, 0.8, 0.30, 0.05, callback)
+    postProcessing(violinMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
+    postProcessing(pianoMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
+    postProcessing(harpMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
+    postProcessing(guitarMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
+    postProcessing(fluteMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
+    postProcessing(bassMidiFiles, videoLength + 3.0, timeBetweenNotes, 60, 0.3, 0.8, 3.5, 0.8, callback)
 
     violinMidiPath = idString + "_violin.mid"
     pianoMidiPath = idString + "_piano.mid"
