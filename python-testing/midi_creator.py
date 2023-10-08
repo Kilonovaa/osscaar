@@ -124,7 +124,7 @@ with open("output.mid", 'wb') as outf:
     mf.writeFile(outf)
 
 midis=[]
-midis.append(midi_file(path='output.mid',soundfont='Piano_Paradise.sf2'))
+midis.append(midi_file(path='output.mid',soundfont=harp))
 make_wav(midis,'out.wav')
 change_vol('out.wav','out.wav',20)
 
@@ -137,7 +137,7 @@ def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
 
 def video2wav(video_path:str,out_path:str):
     midis=[]
-
+    
     cam = cv2.VideoCapture(video_path)
     
     
