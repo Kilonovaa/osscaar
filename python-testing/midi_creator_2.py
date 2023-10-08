@@ -71,16 +71,24 @@
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 
-def coolAddNote(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
-                   noteStart: float, pitch: int, volume: int, balance: float,
+def addNoteAtIndex(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
+                   noteIndex: int, pitch: int, volume: int, balance: float,
                    nrChannels: int = 16) -> float:
     
-    index = round(noteStart / timeBetweenNotes)
+    noteStart = noteIndex * timeBetweenNotes
     noteDuration = timeBetweenNotes * len(midiFiles)
     # balance: [-1, 1]
     balanceChannel = max( min( round((float(balance) + 1.0) / 2.0 * (nrChannels-1)), nrChannels-1 ), 0 )
-    midiFiles[index % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
+    midiFiles[noteIndex % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
     return max(midiLength, noteStart)
+
+def addNoteAtTime(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
+                   noteStart: float, pitch: int, volume: int, balance: float,
+                   nrChannels: int = 16) -> float:
+    
+    addNoteAtIndex(midiFiles, midiLength, timeBetweenNotes,
+                   round(noteStart / timeBetweenNotes), pitch, volume, balance,
+                   nrChannels)
 
 
 def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,

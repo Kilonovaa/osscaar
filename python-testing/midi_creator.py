@@ -146,10 +146,18 @@ def video2wav(video_path:str,out_path:str):
     #print(video_fps)
     
     flag, frame = cam.read()
+    ts = float(cam.get(cv2.CAP_PROP_POS_MSEC))/1000.0
+    timeBetweenNotes = 0.33
+    lastIndex = -1
     while flag:
-        frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        image2AddNote()
+        newIndex = round(ts / timeBetweenNotes)
+        if newIndex > lastIndex:
+            lastIndex = newIndex
+            frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            image2AddNote()
         flag, image = cam.read()
+        ts = float(cam.get(cv2.CAP_PROP_POS_MSEC))/1000.0
+
 
     make_wav(midis,out_path)
 
