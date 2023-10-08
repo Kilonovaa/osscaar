@@ -111,7 +111,7 @@ def upload(sid, file_data):
 if __name__ == '__main__':
 
     if sio.async_mode == 'threading':
-        app.run(threaded=True, port=8000)
+        app.run(threaded=True, port=8000, debug=True, host="0.0.0.0")
     elif sio.async_mode == 'eventlet':
         import eventlet
         import eventlet.wsgi
