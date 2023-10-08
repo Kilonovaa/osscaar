@@ -1,7 +1,6 @@
 import socketio
 from flask import Flask
 import eventlet
-
 import socketio
 import random
 import string
@@ -14,13 +13,13 @@ import sys
 url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
 supabase: Client = create_client(url, key)
-async_mode = None
 
 
-sio = socketio.Server(logger=True, async_mode="threading", cors_allowed_origins='*',
+sio = socketio.Server(logger=True, async_mode=None, cors_allowed_origins='*',
                       max_http_buffer_size=1024 ** 3)
 app = Flask(__name__)
-app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+app.wsgi_app = socketio.WSGIApp(
+    sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 thread = None
 
