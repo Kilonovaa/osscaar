@@ -20,7 +20,7 @@
   let names = {
     processFile: "Preparing File",
     uploadFIle: "Uploading File",
-    processSound: "Generation Sound",
+    processSound: "Generating Sound",
     uploadSound: "Downloading Sound",
   }
 
@@ -43,7 +43,7 @@
     todo.processSound = info.progress * 100
     if (info.hasOwnProperty("progress")) {
       if (info.hasOwnProperty("frames") && info.hasOwnProperty("text")) {
-        if (info.progress * 100 <= 50) {
+        if (info.progress * 100 < 50) {
           proccessingString =
             ((info.frames * todo.processSound) / 50).toFixed(0) +
             "/" +
