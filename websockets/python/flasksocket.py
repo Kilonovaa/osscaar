@@ -95,7 +95,8 @@ def upload(sid, file_data):
         print("Upload successful.")
         sio.emit('upload_response', {
             "status": "success",
-            "progress": 100
+            "progress": 100,
+            "url": supabase.storage.from_('data').get_public_url(file_path)
         }, room=sid)
     else:
         print(f"Upload failed with status code: {response.status_code}")
