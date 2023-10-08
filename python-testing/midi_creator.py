@@ -20,7 +20,8 @@ mf = MIDIFile(1)     # only 1 track
 track = 0   # the only track
 time = 0    # start at the beginning
 mf.addTrackName(track, time, "Sample Track")
-mf.addTempo(track, time, 220)
+tempu=180
+mf.addTempo(track, time, tempu)
 
 channel = 0
 volume = 100
@@ -34,32 +35,31 @@ offset = [
 ]
 scade = -20
 
-for j in range(1,2001):
-    for i in range(0,10):
-        if i%4==0:
-            for x in range (0, 4):
-                pitch = 65 + offset[x]
-                time = (i*4 + x)*j       
-                duration = 600  
-                mf.addNote(track, channel, pitch, time, duration, 100)   
-        elif i%4==1:
-            for x in range (0, 4):
-                pitch = 36 + offset[x]
-                time = (i*4 + x)*j
-                duration = 600
-                mf.addNote(track, channel, pitch, time, duration, 100)  
-        if i%4==2:
-            for x in range (0, 4):
-                pitch = 48 + offset[x]
-                time = (i*4 + x)*j
-                duration = 600
-                mf.addNote(track, channel, pitch, time, duration, 100)   
-        elif i%4==3:
-            for x in range (0, 4):
-                pitch = 41 + offset[x]
-                time = (i*4 + x)*j          
-                duration = 6000 
-                mf.addNote(track, channel, pitch, time, duration, 100)  
+for i in range(0,4):
+    if i%4==0:
+        for x in range (0, 4):
+            pitch = 65 + offset[x]
+            time = (i*4 + x)       
+            duration = 2 
+            mf.addNote(track, channel, pitch, time, duration, 100)   
+    elif i%4==1:
+        for x in range (0, 4):
+            pitch = 36 + offset[x]
+            time = (i*4 + x)
+            duration = 2
+            mf.addNote(track, channel, pitch, time, duration, 100)  
+    if i%4==2:
+        for x in range (0, 4):
+            pitch = 48 + offset[x]
+            time = (i*4 + x)
+            duration = 2
+            mf.addNote(track, channel, pitch, time, duration, 100)   
+    elif i%4==3:
+        for x in range (0, 4):
+            pitch = 41 + offset[x]
+            time = (i*4 + x)         
+            duration = 4 
+            mf.addNote(track, channel, pitch, time, duration, 100)
        
 
 # for i in range(0,2000):
@@ -128,24 +128,32 @@ midis.append(midi_file(path='output.mid',soundfont='Piano_Paradise.sf2'))
 make_wav(midis,'out.wav')
 change_vol('out.wav','out.wav',20)
 
-"""def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
+def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
+    back_tempo=alpha*sat
     for i in range(0,len(frame)):
         for j in range(0,len(frame[0])):
+            return
 
-
-    return
 
 def video2wav(video_path:str,out_path:str):
     midis=[]
 
     cam = cv2.VideoCapture(video_path)
+    
+    
+    #check fps
+    #video_fps=cam.get(cv2.CAP_PROP_FPS)
+    #print(video_fps)
+    
     flag, frame = cam.read()
     while flag:
         frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         image2AddNote()
         flag, image = cam.read()
 
-    make_wav(midis,out_path)"""
+    make_wav(midis,out_path)
+
+video2wav("MVI_2939.MP4","orionnebula.wav")
 
 
 

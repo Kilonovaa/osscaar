@@ -72,15 +72,15 @@ from midiutil.MidiFile import MIDIFile
 import numpy as np
 
 def addNoteAtIndex(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
-                   index: int, pitch: int, volume: int, balance: float,
+                   noteStart: float, pitch: int, volume: int, balance: float,
                    nrChannels: int = 16) -> float:
     
-    time = index * timeBetweenNotes
+    index = round(noteStart / timeBetweenNotes)
     noteDuration = timeBetweenNotes * len(midiFiles)
     # balance: [-1, 1]
-    balanceChannel = max( min( int((float(balance) + 1.0) / 2.0 * (nrChannels-1)), nrChannels-1 ), 0 )
-    midiFiles[index % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=time, duration=noteDuration, volume=volume)
-    return max(midiLength, time)
+    balanceChannel = max( min( round((float(balance) + 1.0) / 2.0 * (nrChannels-1)), nrChannels-1 ), 0 )
+    midiFiles[index % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
+    return max(midiLength, noteStart)
 
 
 def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNotes: float,
@@ -101,7 +101,7 @@ def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNote
     
     for i in range(len(midiFiles)):
         for ch in range(nrChannels):
-            balance = max(min(int(float(ch) / (nrChannels-1) * maxBalance), maxBalance), 0)
+            balance = max(min(round(float(ch) / (nrChannels-1) * maxBalance), maxBalance), 0)
             midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=8, parameter=balance)
             midiFiles[i].addTempo(track=ch, time=0, tempo=tempo) # tempo is in beats per minute
             
@@ -114,13 +114,13 @@ def postProcessing(midiFiles: list[MIDIFile], midiLength: float, timeBetweenNote
                 j += volumeZeroDuration
                 if volumeSlopeUpDuration > 0.0:
                     for k in np.arange(0, maxExpression, incVolumeResolution, dtype=float):
-                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeUpDuration, controller_number=11, parameter=max(min(int(k), maxExpression), 0))
+                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeUpDuration, controller_number=11, parameter=max(min(round(k), maxExpression), 0))
                 j += volumeSlopeUpDuration
                 midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j, controller_number=11, parameter=maxExpression)
                 j += volumeMaxDuration
                 if volumeSlopeDownDuration > 0.0:
                     for k in np.arange(0, maxExpression, decVolumeResolution, dtype=float):
-                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeDownDuration, controller_number=11, parameter=max(min(maxExpression - int(k), maxExpression), 0))
+                        midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j + (float(k) / maxExpression) * volumeSlopeDownDuration, controller_number=11, parameter=max(min(maxExpression - round(k), maxExpression), 0))
                 j += volumeSlopeDownDuration
                 midiFiles[i].addControllerEvent(track=ch, channel=ch, time=j, controller_number=11, parameter=0)
                 j += volumeZero2Duration
