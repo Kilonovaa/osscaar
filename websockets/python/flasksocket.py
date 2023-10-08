@@ -1,14 +1,14 @@
-import sys
-from supabase import create_client, Client
-import requests
-from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
-import os
-import string
-import random
-from flask import Flask
 import socketio
+from flask import Flask
 import eventlet
-eventlet.monkey_patch()
+import socketio
+import random
+import string
+import os
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+import requests
+from supabase import create_client, Client
+import sys
 
 url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
