@@ -115,11 +115,11 @@ lastCompletion = 0.0
 nrFrames = 1
 
 
-verticalKernel = np.array([0.45, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.45], dtype=float)
-verticalKernel *= 0.58
+verticalKernel = np.array([0.5, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.5], dtype=float)
+verticalKernel *= 0.38
 
 horizontalKernel = np.array([0.35, 0.85, 1.0, 0.85, 0.35], dtype=float)
-horizontalKernel *= 0.69
+horizontalKernel *= 0.48
 
 
 def getChannelFromBalance(balance: int) -> int:
@@ -360,7 +360,7 @@ def getMidisFromVideo(videoPath: str, idString: str, myCallback):
     
     lastCompletion = 0.5
 
-    postProcessing(violinMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8, maxVolume=96)
+    postProcessing(violinMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8, maxVolume=78)
     postProcessing(pianoMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
     postProcessing(harpMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
     postProcessing(guitarMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
