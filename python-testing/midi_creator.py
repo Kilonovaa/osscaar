@@ -124,7 +124,7 @@ with open("output.mid", 'wb') as outf:
     mf.writeFile(outf)
 
 midis=[]
-midis.append(midi_file(path='output.mid',soundfont=harp))
+midis.append(midi_file(path='output.mid',soundfont=double_bass))
 make_wav(midis,'out.wav')
 change_vol('out.wav','out.wav',20)
 
