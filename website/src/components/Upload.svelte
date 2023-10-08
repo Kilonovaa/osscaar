@@ -129,7 +129,7 @@
         {/each}
       {:else}
         <h1>Selenotone, listen to the unknown.</h1>
-        <p>Use headphones for best experience.</p>
+        <p>Use headphones for the best experience.</p>
         <label for="file">Upload Video</label>
         <input
           type="file"
