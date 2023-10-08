@@ -97,21 +97,21 @@ def upload(sid, file_data):
         "url": "/sound.wav"
     }, room=sid)
 
-    sio.emit('sound_progress', {
-        "progress": 0
-    }, room=sid)
-    sio.sleep(1)
-    sio.emit('sound_progress', {
-        "progress": 10
-    }, room=sid)
-    sio.sleep(1)
-    sio.emit('sound_progress', {
-        "progress": 30
-    }, room=sid)
-    sio.sleep(1)
-    sio.emit('sound_progress', {
-        "progress": 100
-    }, room=sid)
+    for i in range(0, 11):
+        sio.emit('sound_progress', {
+            "progress": i * 10
+        }, room=sid)
+        sio.sleep(0.1 + 0.5 * random.random())
+        if i == 8:
+            sio.sleep(1 * random.random())
+
+    for i in range(0, 11):
+        sio.emit('send_response', {
+            "progress": i * 10
+        }, room=sid)
+        sio.sleep(0.08 + 0.2 * random.random())
+        if i == 8:
+            sio.sleep(3 * random.random())
 
     if response.status_code == 200:
         print("Upload successful.")

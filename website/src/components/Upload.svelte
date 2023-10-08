@@ -44,6 +44,16 @@
     //   videourl = info.url
     // }
   })
+  socket.on("send_response", async (info) => {
+    console.log(info)
+    todo.uploadSound = info.progress
+    if (info.hasOwnProperty("error")) {
+      alert(JSON.parse(info.error).message)
+    }
+    // if (info.hasOwnProperty("url")) {
+    //   videourl = info.url
+    // }
+  })
   socket.on("sound", async (info) => {
     console.log(info)
     if (info.hasOwnProperty("url")) {
