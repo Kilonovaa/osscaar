@@ -42,6 +42,7 @@ def my_room_event(sid, message):
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
+    algorithm.removeDirAndFilesInsideIfNotEmpty("./tmp/"+sid+"/")
 
 
 @sio.event
@@ -52,6 +53,7 @@ def connect(sid, environ):
 @sio.event
 def disconnect(sid):
     print('Client disconnected')
+    algorithm.removeDirAndFilesInsideIfNotEmpty("./tmp/"+sid+"/")
 
 
 @sio.on('upload')

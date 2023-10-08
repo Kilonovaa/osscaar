@@ -20,7 +20,7 @@
     processFile: "Preparing File",
     uploadFIle: "Uploading File",
     processSound: "Generation Sound",
-    uploadSound: "Uploading Sound",
+    uploadSound: "Downloading Sound",
   }
 
   socket.on("upload_response", async (info) => {
@@ -180,7 +180,7 @@
         {/each}
       {:else}
         <h1>Selenotone, listen to the unknown.</h1>
-        <p>Use headphones for the best experience.</p>
+        <p>Use headphones for the best experience. Max file size of 45Mb.</p>
         <label for="file">Upload Video</label>
         <input
           type="file"
