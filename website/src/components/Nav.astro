@@ -1,0 +1,39 @@
+---
+import Favicon from "../components/Favicon.astro"
+---
+
+<nav>
+  <div class="flex">
+    <Favicon />
+    <h1>Selenotone</h1>
+  </div>
+  <div class="flex">
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/contact">Contact</a>
+    <a href="/login">Login</a>
+  </div>
+</nav>
+<style>
+  .flex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+  }
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+  }
+  a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease-in-out;
+  }
+  a:hover {
+    text-decoration: underline;
+    color: var(--accent);
+  }
+</style>

@@ -9,6 +9,10 @@ COPY ./websockets/python/* .
 RUN pip install aiohttp
 RUN pip install python-socketio
 RUN pip install supabase
+RUN pip install requests
+RUN pip install requests_toolbelt
+RUN pip install flask
+RUN pip install eventlet
 # Install pipenv
 # RUN pip install pipenv
 
@@ -19,4 +23,4 @@ RUN pip install supabase
 EXPOSE 8000
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD ["python", "flasksocket.py"]
