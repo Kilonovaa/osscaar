@@ -36,7 +36,7 @@
   })
   socket.on("sound_progress", async (info) => {
     console.log(info)
-    todo.processSound = info.progress
+    todo.processSound = info.progress * 100
     if (info.hasOwnProperty("error")) {
       alert(JSON.parse(info.error).message)
     }
