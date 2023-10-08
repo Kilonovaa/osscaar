@@ -319,7 +319,7 @@
     bottom: -6rem;
     transform: rotate(10deg);
     opacity: 0.6;
-    z-index: -100;
+    z-index: -1;
   }
   h1 {
     font-size: clamp(2.5rem, 5vw, 4rem);
@@ -384,7 +384,9 @@
       height: fit-content;
     }
     svg {
+      height: 30vh;
       opacity: 0.3;
+      right: auto;
     }
   }
   .item {
