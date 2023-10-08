@@ -44,6 +44,7 @@ const { title } = Astro.props
     min-height: 100vh;
     color: white;
     font-family: "Titillium Web", sans-serif;
+    overflow: overlay;
 
     font-weight: 500;
     padding: 0;
@@ -53,5 +54,24 @@ const { title } = Astro.props
   *::before,
   *::after {
     box-sizing: border-box;
+  }
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background-color: white;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
   }
 </style>

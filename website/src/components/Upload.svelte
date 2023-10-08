@@ -11,7 +11,7 @@
   let show = 0
 
   let todo = {
-    processFile: 0,
+    processFile: 100,
     uploadFIle: 0,
     processSound: 0,
     uploadSound: 0,
@@ -299,8 +299,8 @@
         </video>
         <AudioPlayer
           src={soundUrl}
-          title="Lazar"
-          artist="Moska"
+          title="An Unknown Spaceship"
+          artist="by Selenotone"
           on:paused={play}
           on:change={frame}
         />
