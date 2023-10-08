@@ -3,6 +3,7 @@
   import { url } from "../lib/socket"
   import { supabase } from "../lib/supabase"
   const socket = io(url)
+  let videourl = ""
   let progress = 0
 
   socket.on("upload_response", async (info) => {
@@ -13,6 +14,9 @@
     }
     if (info.hasOwnProperty("error")) {
       alert(JSON.parse(info.error).message)
+    }
+    if (info.hasOwnProperty("url")) {
+      videourl = info.url
     }
   })
 
@@ -43,18 +47,27 @@
     <progress value={progress} max="100" />
   {/if}
 </section>
+{#if videourl != ""}
+  <video src={videourl} controls autoplay muted />
+{/if}
 
 <style>
   section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem 4rem;
+    padding-block: 2rem;
     border-radius: 1rem;
     min-width: fit-content;
     background-color: white;
     color: black;
-    width: clamp(20rem, 50vw, 50rem);
+    width: clamp(1rem, 80vw, 70rem);
+    height: 60vh;
     margin: 3rem auto;
+  }
+  @media only screen and (max-width: 600px) {
+    section {
+      width: clamp(1rem, 95vw, 70rem);
+    }
   }
 </style>
