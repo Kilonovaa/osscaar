@@ -58,17 +58,20 @@ midis.append(midi_file(path='output.mid',soundfont='Piano_Paradise.sf2'))
 make_wav(midis,'out.wav')
 change_vol('out.wav','out.wav',20)
 
-def image2AddNote():
+def image2AddNote(frame:cv2.numpy.ndarray,midis:list):
     return
 
 def video2wav(video_path:str,out_path:str):
+    midis=[]
+
     cam = cv2.VideoCapture(video_path)
     flag, frame = cam.read()
     while flag:
         frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-        
+        image2AddNote()
         flag, image = cam.read()
+
+    make_wav(midis,out_path)
 
 
 
