@@ -16,7 +16,7 @@ const { title, publisher, description, url } = Astro.props
   </div>
   <video src={url} controls muted></video>
   <div class="flex">
-    <p>{description.substring(0, 30)}</p>
+    <p>{description.substring(0, 100)}...</p>
     <a href={url} download>Download</a>
   </div>
 </div>

@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro"
 import Card from "../components/Card.astro"
 const assets = [
   {
-    title: "Hickson Compact Group 40: A Flight Through Interacting Galaxies",
+    title: "HCG40: A Flight Through Galaxies",
     publisher: "Hubble Space Telescope",
     description:
       "This visualization, which uses scientific data, begins by illustrating the location of the Hickson Compact Group 40 in the constellation Hydra. It then zooms into a lonely patch of sky inhabited by the close-knit group’s five galaxies. Finally, it shows a fly-through of this eclectic bunch — which includes three spiral-shaped galaxies, an elliptical galaxy and a lenticular (lens-like) galaxy — and how they are situated in relation to each other.",
@@ -52,14 +52,14 @@ const assets = [
     url: "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/examples/Hubble%20Video%20of%20Moons%20Circling%20Saturn.mp4",
   },
   {
-    title: "Flight Through the Orion Nebula in Visible Light",
+    title: "Orion Nebula in Visible Light",
     publisher: "Hubble Space Telescope",
     description:
       "This visualization explores the Orion Nebula as seen in visible-light observations from the Hubble Space Telescope. This movie is designed to be compared and contrasted against the companion movie using infrared-light observations from the Spitzer Space Telescope. As the camera flies into the star-forming region, it reveals a glowing gaseous landscape that has been illuminated and carved by the high-energy radiation and strong stellar winds from the massive hot stars in the central cluster. The high-resolution visible observations show fine details including the wispy bow shocks and tadpole-shaped proplyds.",
     url: "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/examples/Flight%20Through%20the%20Orion%20Nebula%20in%20Visible%20Light.mp4?t=2023-10-08T17%3A24%3A51.116Z",
   },
   {
-    title: "Flight Through the Orion Nebula in Infrared Light",
+    title: "Orion Nebula in Infrared Light",
     publisher: "Hubble Space Telescope",
     description:
       "This visualization explores the Orion Nebula as seen in infrared-light observations from the Spitzer Space Telescope. This movie is designed to be compared and contrasted against the companion movie using visible-light observations from the Hubble Space Telescope. As the camera flies into the star-forming region, it reveals a glowing gaseous landscape that has been illuminated and carved by the high-energy radiation and strong stellar winds from the massive hot stars in the central cluster. The infrared observations generally show cool temperature gas at a deep layer that shows the full bowl shape of the nebula. In addition, the infrared showcases many faint stars that shine primarily at longer wavelengths.",
@@ -72,24 +72,19 @@ const assets = [
   <main>
     <h1>Example video clips</h1>
     <div class="videos">
-      <Card
-        title="lazar"
-        publisher="lazar"
-        description="otelu galati"
-        url="https://www.youtube.com/watch?v=Q8TXgCzxEnw"
-      />
-      <Card
-        title="lazar"
-        publisher="lazar"
-        description="otelu galati"
-        url="https://www.youtube.com/watch?v=Q8TXgCzxEnw"
-      />
-      <Card
-        title="lazar"
-        publisher="lazar"
-        description="otelu galati"
-        url="https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/public/-2PBwU3o_MHz19U5AAA5uzk3besqpu.mp4"
-      />
+      {
+        assets.map(async (card) => {
+          // Scripts and styles don't work in <Content />
+          return (
+            <Card
+              title={card.title}
+              publisher={card.publisher}
+              description={card.description}
+              url={card.url}
+            />
+          )
+        })
+      }
     </div>
   </main>
 </Layout>
