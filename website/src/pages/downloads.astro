@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro"
-import Upload from "../components/Upload.svelte"
-import Nav from "../components/Nav.astro"
+import Card from "../components/Card.astro"
 const assets = [
   {
     title: "",
@@ -14,6 +13,26 @@ const assets = [
 <Layout title="Examples.">
   <main>
     <h1>Example video clips</h1>
+    <div class="videos">
+      <Card
+        title="lazar"
+        publisher="lazar"
+        description="otelu galati"
+        url="https://www.youtube.com/watch?v=Q8TXgCzxEnw"
+      />
+      <Card
+        title="lazar"
+        publisher="lazar"
+        description="otelu galati"
+        url="https://www.youtube.com/watch?v=Q8TXgCzxEnw"
+      />
+      <Card
+        title="lazar"
+        publisher="lazar"
+        description="otelu galati"
+        url="https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/public/-2PBwU3o_MHz19U5AAA5uzk3besqpu.mp4"
+      />
+    </div>
   </main>
 </Layout>
 
@@ -22,5 +41,12 @@ const assets = [
     text-align: center;
   }
   main {
+    padding: 1rem;
+  }
+  .videos {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 </style>
