@@ -129,19 +129,12 @@ def getBalanceFromChannel(channel: int) -> int:
     return max( min( round(float(channel) / 15.0 * 127.0), 127 ), 0 )
 
 def addNoteAtIndex(midiFiles, timeBetweenNotes: float,
-                   noteIndex: int, pitch: int, volume: int, balance: int) -> float:
+                   noteIndex: int, pitch: int, volume: int, balanceChannel: int) -> float:
     
     noteStart = noteIndex * timeBetweenNotes
-    noteDuration = timeBetweenNotes * len(midiFiles)
-    balanceChannel = getChannelFromBalance(balance)
+    noteDuration = timeBetweenNotes * len(midiFiles) - 0.02
     midiFiles[noteIndex % len(midiFiles)].addNote(track = balanceChannel, channel = balanceChannel, pitch=pitch, time=noteStart, duration=noteDuration, volume=volume)
 
-
-def addNoteAtTime(midiFiles, timeBetweenNotes: float,
-                   noteStart: float, pitch: int, volume: int, balance: int) -> float:
-    
-    addNoteAtIndex(midiFiles, timeBetweenNotes,
-                   round(noteStart / timeBetweenNotes), pitch, volume, balance)
 
 
 def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
@@ -165,6 +158,8 @@ def postProcessing(midiFiles, midiLength: float, timeBetweenNotes: float,
     for i in range(len(midiFiles)):
         for ch in range(16):
             balance = getBalanceFromChannel(ch)
+            midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=125, parameter=0)
+            midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=127, parameter=0)
             midiFiles[i].addControllerEvent(track=ch, channel=ch, time=0, controller_number=8, parameter=balance)
             midiFiles[i].addTempo(track=ch, time=0, tempo=tempo) # tempo is in beats per minute
             
@@ -360,12 +355,12 @@ def getMidisFromVideo(videoPath: str, idString: str, myCallback):
     
     lastCompletion = 0.5
 
-    postProcessing(violinMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8, maxVolume=78)
-    postProcessing(pianoMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
-    postProcessing(harpMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
-    postProcessing(guitarMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
-    postProcessing(fluteMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
-    postProcessing(bassMidiFiles, videoLength, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
+    postProcessing(violinMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8, maxVolume=78)
+    postProcessing(pianoMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
+    postProcessing(harpMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
+    postProcessing(guitarMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
+    postProcessing(fluteMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
+    postProcessing(bassMidiFiles, videoLength + 3.5, timeBetweenNotes, 60, 0.3, 0.8, 2.2, 0.8)
 
     violinMidiPath = idString + "_violin.mid"
     pianoMidiPath = idString + "_piano.mid"
@@ -496,9 +491,12 @@ def getMidisFromVideo(videoPath: str, idString: str, myCallback):
     return idString + "_all.wav"
 
 
+def emptyCallback(a, b, c):
+    return
+
 # test
 
-# def processingCallback(status: float):
-#     print("Loading:  " + str(status * 100.0) + " %")
+def processingCallback(status: float, msg: str, nrFrames):
+    print("Loading:  " + str(status * 100.0) + " %")
 
-# getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
+getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
