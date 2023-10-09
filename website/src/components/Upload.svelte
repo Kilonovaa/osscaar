@@ -98,7 +98,7 @@
     }
   }
   let randomSongName = "An Unknown Spaceship"
-  async function fetchVideo(url) {
+  async function fetchVideo(url, url2) {
     const nouns = [
       "Galaxy",
       "Flight",
@@ -150,14 +150,26 @@
     let finalArticle = Math.random() > 0.5 ? article : "The"
     randomSongName = finalArticle + " " + randomAdjective + " " + randomNoun
     const response = await fetch(url)
-
+    const response2 = await fetch(url2)
+    let data = {
+      video: "",
+      music: "",
+    }
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     } else {
       const videoData = await response.blob()
       const video = URL.createObjectURL(videoData)
-      return video
+      data.video = video
     }
+    if (!response2.ok) {
+      throw new Error(`HTTP error! status: ${response2.status}`)
+    } else {
+      const musicData = await response2.blob()
+      const music = URL.createObjectURL(musicData)
+      data.music = music
+    }
+    return data
   }
   function frame(event) {
     var vid = document.getElementById("video")
@@ -361,15 +373,15 @@
     </div>
   {/if}
   {#if videourl != ""}
-    {#await fetchVideo(videourl)}
+    {#await fetchVideo(videourl, soundUrl)}
       <p>loading...</p>
-    {:then video}
+    {:then data}
       <div class="media">
         <video preload="auto" controls="" id="video" muted>
-          <source src={video} type="video/mp4" />
+          <source src={data.video} type="video/mp4" />
         </video>
         <AudioPlayer
-          src={soundUrl}
+          src={data.music}
           title={randomSongName}
           artist="by Selenotone"
           on:paused={play}
@@ -390,7 +402,7 @@
     bottom: -6rem;
     transform: rotate(10deg);
     opacity: 0.7;
-    z-index: 0;
+    z-index: -1;
   }
   h1 {
     font-size: clamp(2.5rem, 5vw, 4rem);
