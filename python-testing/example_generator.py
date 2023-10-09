@@ -1,9 +1,10 @@
 from midi_creator_2 import *
 import os
 
-for file in os.listdir("../video-stash"):
-    if file.lower().endswith(".mp4"):
-        fileName = file[0:-4]
-        print(fileName)
-        getMidisFromVideo("../video-stash/" + fileName + ".mp4", "../video-stash/" + fileName, emptyCallback)
-        
+
+def shorthandGetMidisFromVideo(fileName: str):
+    getMidisFromVideo("../video-stash/" + fileName + ".mp4", "../video-stash/" + fileName, emptyCallback)
+
+shorthandGetMidisFromVideo("Animation of Comet 2I_Borisov")
+shorthandGetMidisFromVideo("Cosmic Reef_ NGC 2014 & NGC 2020")
+shorthandGetMidisFromVideo("Flight Through the Orion Nebula in Infrared Light")
