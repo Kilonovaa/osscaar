@@ -496,7 +496,7 @@ def emptyCallback(a, b, c):
 
 # test
 
-def processingCallback(status: float, msg: str, nrFrames):
-    print("Loading:  " + str(status * 100.0) + " %")
+# def processingCallback(status: float, msg: str, nrFrames):
+#     print("Loading:  " + str(status * 100.0) + " %")
 
-getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
+# getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
