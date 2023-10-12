@@ -170,8 +170,6 @@ lastCompletion = 0.0
 nrFrames = 1
 
 
-frArray = np.zeros((128, 16), dtype=float)
-maskArray = np.zeros((16), dtype=float)
 balanceIndexArray = np.zeros((1), dtype=np.uint8)
 
 def calculateBalanceIndexArray(newSize: int):
@@ -289,17 +287,17 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
     # callback(lastCompletion, "Calculating pitch - balance frequency matrix", nrFrames)
     height, width, _ = frame.shape
 
-    global frArray, maskArray, balanceIndexArray
-    frArray.fill(0)
-    maskArray.fill(0)
+    global balanceIndexArray
     calculateBalanceIndexArray(width)
+    frArray = np.zeros((128, 16), dtype=float)
+    maskArray = np.zeros((16), dtype=float)
 
     frame = cv2.convertScaleAbs(frame, alpha = float(maxPitch - minPitch) / 255.0, beta = minPitch)
 
     for i in range(height):
         for j in range(width):
             pitch = frame[i][j][2]
-            # balanceIndex = getChannelFromBalance(round(float(j) / (width-1) * 127.0))
+            # balanceIndex = round((float(j) / (width-1)) * 15.0)
             balanceIndex = balanceIndexArray[j]
             frArray[pitch][balanceIndex] += mask[i][j]
             maskArray[balanceIndex] += mask[i][j]
