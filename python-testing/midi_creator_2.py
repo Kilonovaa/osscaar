@@ -72,16 +72,71 @@ from midiutil.MidiFile import MIDIFile
 import numpy as np
 import cv2
 from pydub import AudioSegment
+from pydub.utils import db_to_float
 from midi2audio import FluidSynth
 import math
 import random
 from datetime import datetime
+import array
 
 
 class CompleteMidiFile:
   def __init__(self, path: str, soundfont: str):
     self.path = path
     self.soundfont = soundfont
+
+
+class Mixer(object):
+    def __init__(self):
+        self.parts = []
+    
+    def overlay(self, sound, position=0):
+        self.parts.append((position, sound))
+        return self
+        
+    def _sync(self):
+        positions, segs = zip(*self.parts)
+
+        frame_rate = segs[0].frame_rate
+        array_type = segs[0].array_type
+        
+        offsets = [int(frame_rate * pos / 1000.0) for pos in positions]
+        segs = AudioSegment.empty()._sync(*segs)
+        return list(zip(offsets, segs))
+    
+    def __len__(self):
+        parts = self._sync()
+        seg = parts[0][1]
+        frame_count = max(
+            offset + seg.frame_count()
+            for offset, seg in parts
+        )
+        return 1000.0 * frame_count / seg.frame_rate
+        
+    def append(self, sound):
+        self.overlay(sound, position=len(self))
+        
+    def to_audio_segment(self, gain=0):
+        samp_multiplier = db_to_float(gain)
+        parts = self._sync()
+        seg = parts[0][1]
+        channels = seg.channels
+        
+        frame_count = max(
+            offset + seg.frame_count()
+            for offset, seg in parts
+        )
+        sample_count = int(frame_count * seg.channels)
+        
+        output = array.array(seg.array_type, [0]*sample_count)
+        for offset, seg in parts:
+            sample_offset = offset * channels
+            samples = seg.get_array_of_samples()
+            for i in range(len(samples)):
+                output[i+sample_offset] += int(samples[i] * samp_multiplier)
+        
+        return seg._spawn(output)
+
 
 
 majorPitches = []
@@ -115,11 +170,39 @@ lastCompletion = 0.0
 nrFrames = 1
 
 
+frArray = np.zeros((128, 16), dtype=float)
+maskArray = np.zeros((16), dtype=float)
+balanceIndexArray = np.zeros((1), dtype=np.uint8)
+
+def calculateBalanceIndexArray(newSize: int):
+    global balanceIndexArray
+    if newSize >= balanceIndexArray.size - 2 and newSize <= balanceIndexArray.size:
+        return
+    newSize = newSize + 1
+    balanceIndexArray = np.zeros((newSize), dtype=np.uint8)
+    for i in range(0, newSize):
+        balanceIndexArray[i] = round((float(i) / (newSize-1)) * 15.0)
+    # np.clip(balanceIndexArray, 0, 15)
+
+
 verticalKernel = np.array([0.5, 0.7, 0.9, 1.0, 1.0, 1.0, 0.9, 0.7, 0.5], dtype=float)
 verticalKernel *= 0.38
 
+def frArrayModifyVertical(x):
+    global verticalKernel
+    y = np.convolve(x, verticalKernel, mode='full')
+    y = np.roll(y, - (len(verticalKernel) // 2))
+    return y
+
 horizontalKernel = np.array([0.35, 0.85, 1.0, 0.85, 0.35], dtype=float)
 horizontalKernel *= 0.48
+
+def frArrayModifyHorizontal(x):
+    global horizontalKernel
+    y = np.convolve(x, horizontalKernel, mode='full')
+    y = np.roll(y, - (len(horizontalKernel) // 2))
+    return y
+
 
 
 def getChannelFromBalance(balance: int) -> int:
@@ -192,7 +275,7 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
     
     global callback, lastCompletion, nrFrames
 
-    callback(lastCompletion, "Applying HSV masks", nrFrames)
+    # callback(lastCompletion, "Applying HSV masks", nrFrames)
     mask = 0
     if (lowerHsv[0] > upperHsv[0]):
         mask1 = cv2.inRange(frame, lowerHsv, np.array([179, upperHsv[1], upperHsv[2]]))
@@ -203,37 +286,30 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
         mask = cv2.inRange(frame, lowerHsv, upperHsv)
         frame = cv2.bitwise_and(frame, frame, mask = mask)
 
-    callback(lastCompletion, "Calculating pitch - balance frequency matrix", nrFrames)
+    # callback(lastCompletion, "Calculating pitch - balance frequency matrix", nrFrames)
     height, width, _ = frame.shape
-    frArray = np.zeros((128, 16), dtype=float)
-    maskArray = np.zeros((16), dtype=float)
+
+    global frArray, maskArray, balanceIndexArray
+    frArray.fill(0)
+    maskArray.fill(0)
+    calculateBalanceIndexArray(width)
+
     frame = cv2.convertScaleAbs(frame, alpha = float(maxPitch - minPitch) / 255.0, beta = minPitch)
 
     for i in range(height):
         for j in range(width):
             pitch = frame[i][j][2]
-            balanceIndex = getChannelFromBalance(round(float(j) / (width-1) * 127.0))
+            # balanceIndex = getChannelFromBalance(round(float(j) / (width-1) * 127.0))
+            balanceIndex = balanceIndexArray[j]
             frArray[pitch][balanceIndex] += mask[i][j]
             maskArray[balanceIndex] += mask[i][j]
 
-    callback(lastCompletion, "Normalizing frequency matrix by mask per-balance density", nrFrames)
+    # callback(lastCompletion, "Normalizing frequency matrix by mask per-balance density", nrFrames)
     for i in range(0, 128):
         for j in range(0, 16):
             frArray[i][j] /= (maskArray[j] + 2.0 * 255)
 
-    callback(lastCompletion, "Computing fast convolution between frequency matrix and custom vertical/horizontal kernel", nrFrames)
-
-    global verticalKernel, horizontalKernel
-
-    def frArrayModifyVertical(x):
-        y = np.convolve(x, verticalKernel, mode='full')
-        y = np.roll(y, - (len(verticalKernel) // 2))
-        return y
-
-    def frArrayModifyHorizontal(x):
-        y = np.convolve(x, horizontalKernel, mode='full')
-        y = np.roll(y, - (len(horizontalKernel) // 2))
-        return y
+    # callback(lastCompletion, "Computing fast convolution between frequency matrix and custom vertical/horizontal kernel", nrFrames)
     
     frArray = np.apply_along_axis(frArrayModifyVertical, 0, frArray) # vertical
     frArray = np.apply_along_axis(frArrayModifyHorizontal, 1, frArray) # orizontal
@@ -241,7 +317,7 @@ def addNotesFromFrame(midiFiles, frame: np.ndarray, lowerHsv: np.ndarray, upperH
     frArray *= (maxVolume - minVolume)
     frArray += minVolume
 
-    callback(lastCompletion, "Creating notes as part of a chord", nrFrames)
+    # callback(lastCompletion, "Creating notes as part of a chord", nrFrames)
 
     global currentChord
 
@@ -377,112 +453,94 @@ def getMidisFromVideo(videoPath: str, idString: str, myCallback):
     bassWavPath = idString + "_bass.wav"
     
 
-    callback(lastCompletion, "Creating violin .wav number 0", nrFrames)
-    with open(violinMidiPath, "wb") as outf:
-        violinMidiFiles[0].writeFile(outf)
-    FluidSynth(violinMidiPath).midi_to_audio(violinSF, violinWavPath)
-    if len(violinMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(violinWavPath)
-        for index in range(1, len(violinMidiFiles)):
-            callback(lastCompletion + float(index) / len(violinMidiFiles) / 12.0, "Creating violin .wav number " + str(index), nrFrames)
-            with open(violinMidiPath, "wb") as outf:
-                violinMidiFiles[index].writeFile(outf)
-            FluidSynth(violinMidiPath).midi_to_audio(violinSF, violinWavPath)
-            wavi = AudioSegment.from_file(violinWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(violinWavPath, "wav")
+    
+    violinMixer = Mixer()
+    for index in range(0, len(violinMidiFiles)):
+        callback(lastCompletion + float(index) / len(violinMidiFiles) / 12.0, "Creating violin .wav number " + str(index), nrFrames)
+        with open(violinMidiPath, "wb") as outf:
+            violinMidiFiles[index].writeFile(outf)
+        FluidSynth(violinMidiPath).midi_to_audio(violinSF, violinWavPath)
+        audioSeg = AudioSegment.from_file(violinWavPath)
+        violinMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
-    callback(lastCompletion, "Creating piano .wav number 0", nrFrames)
-    with open(pianoMidiPath, "wb") as outf:
-        pianoMidiFiles[0].writeFile(outf)
-    FluidSynth(pianoMidiPath).midi_to_audio(pianoSF, pianoWavPath)
-    if len(pianoMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(pianoWavPath)
-        for index in range(1, len(pianoMidiFiles)):
-            callback(lastCompletion + float(index) / len(pianoMidiFiles) / 12.0, "Creating piano .wav number " + str(index), nrFrames)
-            with open(pianoMidiPath, "wb") as outf:
-                pianoMidiFiles[index].writeFile(outf)
-            FluidSynth(pianoMidiPath).midi_to_audio(pianoSF, pianoWavPath)
-            wavi = AudioSegment.from_file(pianoWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(pianoWavPath, "wav")
+    pianoMixer = Mixer()
+    for index in range(0, len(pianoMidiFiles)):
+        callback(lastCompletion + float(index) / len(pianoMidiFiles) / 12.0, "Creating piano .wav number " + str(index), nrFrames)
+        with open(pianoMidiPath, "wb") as outf:
+            pianoMidiFiles[index].writeFile(outf)
+        FluidSynth(pianoMidiPath).midi_to_audio(pianoSF, pianoWavPath)
+        audioSeg = AudioSegment.from_file(pianoWavPath)
+        pianoMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
-    callback(lastCompletion, "Creating harp .wav number 0", nrFrames)
-    with open(harpMidiPath, "wb") as outf:
-        harpMidiFiles[0].writeFile(outf)
-    FluidSynth(harpMidiPath).midi_to_audio(harpSF, harpWavPath)
-    if len(harpMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(harpWavPath)
-        for index in range(1, len(harpMidiFiles)):
-            callback(lastCompletion + float(index) / len(harpMidiFiles) / 12.0, "Creating harp .wav number " + str(index), nrFrames)
-            with open(harpMidiPath, "wb") as outf:
-                harpMidiFiles[index].writeFile(outf)
-            FluidSynth(harpMidiPath).midi_to_audio(harpSF, harpWavPath)
-            wavi = AudioSegment.from_file(harpWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(harpWavPath, "wav")
+    harpMixer = Mixer()
+    for index in range(0, len(harpMidiFiles)):
+        callback(lastCompletion + float(index) / len(harpMidiFiles) / 12.0, "Creating harp .wav number " + str(index), nrFrames)
+        with open(harpMidiPath, "wb") as outf:
+            harpMidiFiles[index].writeFile(outf)
+        FluidSynth(harpMidiPath).midi_to_audio(harpSF, harpWavPath)
+        audioSeg = AudioSegment.from_file(harpWavPath)
+        harpMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
-    callback(lastCompletion, "Creating guitar .wav number 0", nrFrames)
-    with open(guitarMidiPath, "wb") as outf:
-        guitarMidiFiles[0].writeFile(outf)
-    FluidSynth(guitarMidiPath).midi_to_audio(guitarSF, guitarWavPath)
-    if len(guitarMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(guitarWavPath)
-        for index in range(1, len(guitarMidiFiles)):
-            callback(lastCompletion + float(index) / len(guitarMidiFiles) / 12.0, "Creating guitar .wav number " + str(index), nrFrames)
-            with open(guitarMidiPath, "wb") as outf:
-                guitarMidiFiles[index].writeFile(outf)
-            FluidSynth(guitarMidiPath).midi_to_audio(guitarSF, guitarWavPath)
-            wavi = AudioSegment.from_file(guitarWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(guitarWavPath, "wav")
+    guitarMixer = Mixer()
+    for index in range(0, len(guitarMidiFiles)):
+        callback(lastCompletion + float(index) / len(guitarMidiFiles) / 12.0, "Creating guitar .wav number " + str(index), nrFrames)
+        with open(guitarMidiPath, "wb") as outf:
+            guitarMidiFiles[index].writeFile(outf)
+        FluidSynth(guitarMidiPath).midi_to_audio(guitarSF, guitarWavPath)
+        audioSeg = AudioSegment.from_file(guitarWavPath)
+        guitarMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
-    callback(lastCompletion, "Creating flute .wav number 0", nrFrames)
-    with open(fluteMidiPath, "wb") as outf:
-        fluteMidiFiles[0].writeFile(outf)
-    FluidSynth(fluteMidiPath).midi_to_audio(fluteSF, fluteWavPath)
-    if len(fluteMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(fluteWavPath)
-        for index in range(1, len(fluteMidiFiles)):
-            callback(lastCompletion + float(index) / len(fluteMidiFiles) / 12.0, "Creating flute .wav number " + str(index), nrFrames)
-            with open(fluteMidiPath, "wb") as outf:
-                fluteMidiFiles[index].writeFile(outf)
-            FluidSynth(fluteMidiPath).midi_to_audio(fluteSF, fluteWavPath)
-            wavi = AudioSegment.from_file(fluteWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(fluteWavPath, "wav")
+    fluteMixer = Mixer()
+    for index in range(0, len(fluteMidiFiles)):
+        callback(lastCompletion + float(index) / len(fluteMidiFiles) / 12.0, "Creating flute .wav number " + str(index), nrFrames)
+        with open(fluteMidiPath, "wb") as outf:
+            fluteMidiFiles[index].writeFile(outf)
+        FluidSynth(fluteMidiPath).midi_to_audio(fluteSF, fluteWavPath)
+        audioSeg = AudioSegment.from_file(fluteWavPath)
+        fluteMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
-    callback(lastCompletion, "Creating bass .wav number 0", nrFrames)
-    with open(bassMidiPath, "wb") as outf:
-        bassMidiFiles[0].writeFile(outf)
-    FluidSynth(bassMidiPath).midi_to_audio(bassSF, bassWavPath)
-    if len(bassMidiFiles) > 1:
-        wav0 = AudioSegment.from_file(bassWavPath)
-        for index in range(1, len(bassMidiFiles)):
-            callback(lastCompletion + float(index) / len(bassMidiFiles) / 12.0, "Creating bass .wav number " + str(index), nrFrames)
-            with open(bassMidiPath, "wb") as outf:
-                bassMidiFiles[index].writeFile(outf)
-            FluidSynth(bassMidiPath).midi_to_audio(bassSF, bassWavPath)
-            wavi = AudioSegment.from_file(bassWavPath)
-            wav0 = wav0.overlay(wavi)
-        wav0.export(bassWavPath, "wav")
+    bassMixer = Mixer()
+    for index in range(0, len(bassMidiFiles)):
+        callback(lastCompletion + float(index) / len(bassMidiFiles) / 12.0, "Creating bass .wav number " + str(index), nrFrames)
+        with open(bassMidiPath, "wb") as outf:
+            bassMidiFiles[index].writeFile(outf)
+        FluidSynth(bassMidiPath).midi_to_audio(bassSF, bassWavPath)
+        audioSeg = AudioSegment.from_file(bassWavPath)
+        bassMixer.overlay(audioSeg)
     lastCompletion += 1.0 / 12.0
     
 
-    segmViolin = AudioSegment.from_file(violinWavPath)
-    segmPiano = AudioSegment.from_file(pianoWavPath)
-    segmHarp = AudioSegment.from_file(harpWavPath)
-    segmGuitar = AudioSegment.from_file(guitarWavPath)
-    segmFlute = AudioSegment.from_file(fluteWavPath)
-    segmBass = AudioSegment.from_file(bassWavPath)
+    segmViolin = violinMixer.to_audio_segment()[400:]
+    segmPiano = pianoMixer.to_audio_segment()[400:]
+    segmHarp = harpMixer.to_audio_segment()[400:]
+    segmGuitar = guitarMixer.to_audio_segment()[400:]
+    segmFlute = fluteMixer.to_audio_segment()[400:]
+    segmBass = bassMixer.to_audio_segment()[400:]
 
-    segmAll = segmViolin.overlay(segmPiano).overlay(segmHarp).overlay(segmGuitar).overlay(segmFlute).overlay(segmBass)
+    segmViolin.export(violinWavPath, "wav")
+    segmPiano.export(pianoWavPath, "wav")
+    segmHarp.export(harpWavPath, "wav")
+    segmGuitar.export(guitarWavPath, "wav")
+    segmFlute.export(fluteWavPath, "wav")
+    segmBass.export(bassWavPath, "wav")
+    
+
+    allMixer = Mixer()
+    allMixer.overlay(segmViolin)
+    allMixer.overlay(segmPiano)
+    allMixer.overlay(segmHarp)
+    allMixer.overlay(segmGuitar)
+    allMixer.overlay(segmFlute)
+    allMixer.overlay(segmBass)
+    
+    segmAll = allMixer.to_audio_segment()
     segmAll.export(idString + "_all.wav", "wav")
+
 
     lastCompletion = 1.0
 
@@ -496,7 +554,7 @@ def emptyCallback(a, b, c):
 
 # test
 
-# def processingCallback(status: float, msg: str, nrFrames):
-#     print("Loading:  " + str(status * 100.0) + " %")
+def processingCallback(status: float, msg: str, nrFrames):
+    print("Loading:  " + str(status * 100.0) + " %")
 
-# getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
+getMidisFromVideo("orionnebula.mp4", "the_dawn_of_mankind", processingCallback)
