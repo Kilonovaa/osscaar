@@ -11,8 +11,8 @@ from supabase import create_client, Client
 import sys
 import algorithm
 
-url = "https://nwhobhigrgxtpnwydpxj.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
+url = "https://jlmscnkfbmlokpvarqcv.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbXNjbmtmYm1sb2twdmFycWN2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5ODI1Njc2MiwiZXhwIjoyMDEzODMyNzYyfQ.nyw1_d6xtY25LYqhvfsXwAMWlg3TuSePm0b2xHITriU"
 supabase: Client = create_client(url, key)
 
 
@@ -58,8 +58,8 @@ def disconnect(sid):
 
 @sio.on('upload')
 def upload(sid, file_data):
-    supaURL = "https://nwhobhigrgxtpnwydpxj.supabase.co"
-    key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjY4Njg1MiwiZXhwIjoyMDEyMjYyODUyfQ.7UxyPZo5PLIEuuntEAXi01t0ZrEc7ZcReQRA08af1qU"
+    supaURL = "https://jlmscnkfbmlokpvarqcv.supabase.co"
+    key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbXNjbmtmYm1sb2twdmFycWN2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5ODI1Njc2MiwiZXhwIjoyMDEzODMyNzYyfQ.nyw1_d6xtY25LYqhvfsXwAMWlg3TuSePm0b2xHITriU"
     bucket = "data"
     random_base64 = ''.join(random.choices(
         string.ascii_lowercase + string.digits, k=10))

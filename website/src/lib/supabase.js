@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { writable } from "svelte/store"
-const supabaseUrl = "https://nwhobhigrgxtpnwydpxj.supabase.co"
+const supabaseUrl = "https://jlmscnkfbmlokpvarqcv.supabase.co"
 const anonKEy =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aG9iaGlncmd4dHBud3lkcHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY2ODY4NTIsImV4cCI6MjAxMjI2Mjg1Mn0.PKRVhcs6GuNeAv0l8txZi9mAjC49JkFl4DjDld3QuTc"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbXNjbmtmYm1sb2twdmFycWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTgyNTY3NjIsImV4cCI6MjAxMzgzMjc2Mn0.GHC25IoBPGFpiiylZ6ha7JVVzU8sxUxIDZOjpGtv4FM"
 const supabase = createClient(supabaseUrl, anonKEy)
 
 export { supabase }
