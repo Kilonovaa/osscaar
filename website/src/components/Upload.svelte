@@ -212,7 +212,9 @@
         {/each}
       {:else}
         <h1>Selenotone, listen to the unknown.</h1>
-        <p>Use headphones for the best experience. Max file size of 45Mb.</p>
+        <p>
+          Upload only works on official website version. This is just a preview.
+        </p>
         <label for="file">Upload Video</label>
         <input
           type="file"

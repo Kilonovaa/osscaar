@@ -1,5 +1,13 @@
 ---
 import Layout from "../layouts/Layout.astro"
+const noi = [
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/5391fd1b-8c0a-430c-b875-0e09bbc8d94b.jpg",
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/54449ec8-3324-458f-98a3-88f89671da91.jpg",
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/5bace951-e62a-491c-bf01-22709afbcdd5.jpg",
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/9c498539-523f-488c-a15b-04064166a32e.jpg",
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/d843d68e-d9c6-490c-884d-108a0ce10293.jpg",
+  "https://nwhobhigrgxtpnwydpxj.supabase.co/storage/v1/object/public/data/noi/d92e2154-aaf3-4539-88d1-add491d3f5bf.jpg",
+]
 ---
 
 <Layout title="About us.">
@@ -59,7 +67,17 @@ import Layout from "../layouts/Layout.astro"
       level of accessibility: it can be used by anyone, be it an elementary
       school student, visually impaired citizen or astrophysics enthusiast.
     </p>
-    <div class="center"></div>
+    <h1>Meet the team</h1>
+    <div
+      class="center"
+      style="flex-direction: row;flex-wrap: wrap;margin: 0 auto;width: 100%;justify-content: space-evenly;align-items: center;"
+    >
+      {
+        noi.map(async (link) => {
+          return <img src={link} />
+        })
+      }
+    </div>
   </main>
 </Layout>
 
@@ -81,5 +99,9 @@ import Layout from "../layouts/Layout.astro"
   }
   a {
     color: var(--accent);
+  }
+  img {
+    max-width: 128px;
+    aspect-ratio: 1 / 1;
   }
 </style>
