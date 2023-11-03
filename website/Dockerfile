@@ -22,4 +22,5 @@ RUN npm run build
 
 FROM busybox:latest AS runtime
 COPY --from=build /dist .
+EXPOSE 80
 CMD ["busybox", "httpd", "-f", "-v", "-p", "80"]
